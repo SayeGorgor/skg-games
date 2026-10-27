@@ -6,6 +6,7 @@ import { AdSlot } from "./ad-slot";
 import { SiteHeader } from "./site-header";
 import { StackMiniBoard } from "./stack-mini-board";
 import { getLocalProgress } from "@/lib/client-progress";
+import { getGameDate } from "@/lib/game-date";
 
 function AlibiPreview() {
   return (
@@ -44,7 +45,7 @@ function GameCard({ kind }: { kind: "alibi" | "stack" }) {
       <p>
         {alibi
           ? "Read the case, connect the clues, and accuse one suspect."
-          : "Fit every shape into the grid and find the cleanest solution."}
+          : "Fill every square using every piece. Choose Small, Medium, or Hard."}
       </p>
       <small>
         {alibi ? "3–5 MIN • LOGIC • 1 ATTEMPT" : "2–4 MIN • SPATIAL • DAILY"}
@@ -56,9 +57,22 @@ function GameCard({ kind }: { kind: "alibi" | "stack" }) {
 
 export function HomeClient() {
   const [done, setDone] = useState(0);
+  const [today, setToday] = useState("");
   useEffect(() => {
-    const p = getLocalProgress();
-    setDone(Number(p.alibiSolved) + Number(p.stackSolved));
+    const frame = requestAnimationFrame(() => {
+      const p = getLocalProgress();
+      setToday(
+        new Date(getGameDate() + "T12:00:00Z")
+          .toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            timeZone: "UTC",
+          })
+          .toUpperCase(),
+      );
+      setDone(Number(p.alibiSolved) + Number(p.stackSolved));
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   return (
@@ -77,9 +91,9 @@ export function HomeClient() {
             fresh challenge. Play free with ads or upgrade for an uninterrupted
             experience.
           </p>
-          <div className="button-row">
+          <div className="button-row mt-2">
             <a className="button primary" href="#games">
-              Play today's games
+              Play today&apos;s games
             </a>
             <Link className="button secondary" href="/plus">
               Explore SKG Plus
@@ -87,7 +101,7 @@ export function HomeClient() {
           </div>
         </div>
         <aside className="today-panel">
-          <span className="eyebrow inverse">TODAY • OCT 25</span>
+          <span className="eyebrow inverse">TODAY {today && `• ${today}`}</span>
           <h2>2 new games</h2>
           <p>Finish both to keep your daily streak alive.</p>
           <div className="today-progress">
@@ -103,7 +117,7 @@ export function HomeClient() {
 
       <section id="games" className="container section">
         <div className="section-heading">
-          <h2>Today's games</h2>
+          <h2>Today&apos;s games</h2>
           <span>New challenges every day at midnight</span>
         </div>
         <div className="game-grid">

@@ -13,7 +13,7 @@ for (const game of [
   {
     slug: "perfect-stack",
     name: "Perfect Stack",
-    description: "Fit every shape into the daily grid.",
+    description: "Use every piece. Fill every square.",
   },
 ]) {
   const existing = await db

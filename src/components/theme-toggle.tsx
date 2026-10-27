@@ -6,9 +6,12 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    const current =
-      document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-    setTheme(current);
+    const frame = requestAnimationFrame(() => {
+      const current =
+        document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+      setTheme(current);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   function choose(next: "light" | "dark") {

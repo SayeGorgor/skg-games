@@ -104,7 +104,7 @@ export const alibiSuspects = pgTable(
   (t) => [uniqueIndex("alibi_suspect_key_uq").on(t.challengeId, t.suspectKey)],
 );
 
-export const stackPuzzles = pgTable("stack_puzzles", {
+export const stackPuzzlesLegacy = pgTable("stack_puzzles_legacy", {
   challengeId: uuid("challenge_id")
     .primaryKey()
     .references(() => dailyChallenges.id, { onDelete: "cascade" }),
@@ -116,6 +116,38 @@ export const stackPuzzles = pgTable("stack_puzzles", {
   optimalMoves: integer("optimal_moves"),
 });
 
+export const stackDifficulty = pgEnum("stack_difficulty", [
+  "small",
+  "medium",
+  "hard",
+]);
+export const attemptMode = pgEnum("attempt_mode", ["daily", "practice"]);
+export const stackPuzzles = pgTable(
+  "stack_puzzles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    challengeId: uuid("challenge_id")
+      .notNull()
+      .references(() => dailyChallenges.id, { onDelete: "cascade" }),
+    difficulty: stackDifficulty("difficulty").notNull(),
+    generatorVersion: integer("generator_version").notNull(),
+    seed: text("seed").notNull(),
+    fingerprint: text("fingerprint").notNull(),
+    rows: integer("rows").notNull(),
+    cols: integer("cols").notNull(),
+    pieces: jsonb("pieces").notNull(),
+    canonicalSolution: jsonb("canonical_solution").notNull(),
+    generationMetrics: jsonb("generation_metrics").notNull(),
+    optimalPlacements: integer("optimal_placements").notNull(),
+  },
+  (t) => [
+    uniqueIndex("stack_challenge_difficulty_uq").on(
+      t.challengeId,
+      t.difficulty,
+    ),
+    uniqueIndex("stack_fingerprint_uq").on(t.fingerprint),
+  ],
+);
 export const gameAttempts = pgTable(
   "game_attempts",
   {
@@ -124,7 +156,10 @@ export const gameAttempts = pgTable(
       onDelete: "set null",
     }),
     gameSlug: text("game_slug").notNull(),
-    challengeNumber: integer("challenge_number").notNull(),
+    challengeNumber: integer("challenge_number"),
+    mode: attemptMode("mode").notNull().default("daily"),
+    variant: text("variant"),
+    puzzleSeed: text("puzzle_seed"),
     // Neon Auth IDs are intentionally stored without an FK into neon_auth.*.
     userId: text("user_id"),
     anonymousId: uuid("anonymous_id"),
