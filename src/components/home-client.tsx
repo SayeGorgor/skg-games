@@ -79,7 +79,7 @@ export function HomeClient() {
     <main className="site-shell">
       <SiteHeader />
       <section className="home-hero container">
-        <div>
+        <div className="home-hero-left">
           <span className="eyebrow">DAILY GAMES, BUILT FOR A QUICK WIN</span>
           <h1>
             Daily games worth
@@ -91,7 +91,7 @@ export function HomeClient() {
             fresh challenge. Play free with ads or upgrade for an uninterrupted
             experience.
           </p>
-          <div className="button-row mt-2">
+          <div className="button-row">
             <a className="button primary" href="#games">
               Play today&apos;s games
             </a>
@@ -129,11 +129,13 @@ export function HomeClient() {
       <section className="container free-row">
         <div className="panel free-panel">
           <span className="eyebrow">PLAY FREE</span>
-          <h3>Your games, streaks, and archive — supported by ads.</h3>
-          <p>
-            Ads appear between game sessions and in reserved spaces, never over
-            the puzzle itself. Your progress stays saved either way.
-          </p>
+          <div className="free-panel-main-text">
+            <h3>Your games, streaks, and archive — supported by ads.</h3>
+            <p>
+              Ads appear between game sessions and in reserved spaces, never over
+              the puzzle itself. Your progress stays saved either way.
+            </p>
+          </div>
           <div className="chips">
             <span>Daily games</span>
             <span>Basic stats</span>

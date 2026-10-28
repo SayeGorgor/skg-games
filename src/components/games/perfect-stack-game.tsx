@@ -568,6 +568,21 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
           />
         )}
         <div className="stack-layout">
+          <div className="stat-row">
+            <div>
+              <strong>{fmt}</strong>
+              <small>TIME</small>
+            </div>
+            <div>
+              <strong>{moves}</strong>
+              <small>MOVES</small>
+            </div>
+            <div>
+              <strong>{puzzle.pieceCount}</strong>
+              <small>OPTIMAL</small>
+            </div>
+          </div>
+
           <section className="stack-board-card">
             <div className="board-heading">
               <div>
@@ -651,20 +666,6 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
             </p>
           </section>
           <aside className="stack-side">
-            <div className="stat-row">
-              <div>
-                <strong>{fmt}</strong>
-                <small>TIME</small>
-              </div>
-              <div>
-                <strong>{moves}</strong>
-                <small>MOVES</small>
-              </div>
-              <div>
-                <strong>{puzzle.pieceCount}</strong>
-                <small>OPTIMAL</small>
-              </div>
-            </div>
             <section className="piece-tray">
               <span className="eyebrow">PIECES LEFT</span>
               <div className="piece-grid">
@@ -773,9 +774,9 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
 function PieceShape({
   piece,
   cells,
-  cellSize = 18,
+  cellSize,
   cellHeight = cellSize,
-  gap = 4,
+  gap,
   rowGap = gap,
 }: {
   piece: StackPiece;
@@ -792,10 +793,10 @@ function PieceShape({
     <span
       className="piece-shape"
       style={{
-        gridTemplateColumns: `repeat(${maxC + 1}, ${cellSize}px)`,
-        gridTemplateRows: `repeat(${maxR + 1}, ${cellHeight}px)`,
-        columnGap: gap,
-        rowGap,
+        gridTemplateColumns: `repeat(${maxC + 1}, ${cellSize === undefined ? "var(--tray-cell-size, 18px)" : `${cellSize}px`})`,
+        gridTemplateRows: `repeat(${maxR + 1}, ${cellHeight === undefined ? "var(--tray-cell-size, 18px)" : `${cellHeight}px`})`,
+        columnGap: gap ?? "var(--tray-cell-gap, 4px)",
+        rowGap: rowGap ?? "var(--tray-cell-gap, 4px)",
       }}
     >
       {Array.from({ length: (maxR + 1) * (maxC + 1) }, (_, i) => {

@@ -1,4 +1,5 @@
 import { getGameDate } from "./game-date";
+import { fingerprintAlibiCase, type DailyAlibiCase } from "./games/alibi";
 import {
   isStackSolved,
   oriented,
@@ -11,20 +12,29 @@ import {
 
 export type LocalProgress = { alibiSolved: boolean; stackSolved: boolean };
 const KEY = "skg-progress-v1";
+function readLocalProgressStorage(): Record<string, unknown> {
+  if (typeof window !== "undefined")
+    try {
+      const value: unknown = JSON.parse(localStorage.getItem(KEY) ?? "{}");
+      if (isRecord(value)) return value;
+    } catch {
+      /* A blocked or malformed store must not prevent playing. */
+    }
+  return {};
+}
 
 export function getLocalProgress(): LocalProgress {
   if (typeof window === "undefined")
     return { alibiSolved: false, stackSolved: false };
-  try {
-    return {
-      alibiSolved: false,
-
-      ...JSON.parse(localStorage.getItem(KEY) ?? "{}"),
-      stackSolved: isStackDailyComplete(),
-    };
-  } catch {
-    return { alibiSolved: false, stackSolved: false };
-  }
+  const saved = readLocalProgressStorage();
+  return {
+    // Keep undated legacy indicators compatible; new results expire by date.
+    alibiSolved:
+      saved.alibiSolved === true &&
+      (saved.alibiSolvedDate === undefined ||
+        saved.alibiSolvedDate === getGameDate()),
+    stackSolved: isStackDailyComplete(),
+  };
 }
 
 export function markLocalSolved(game: "alibi" | "stack") {
@@ -33,8 +43,116 @@ export function markLocalSolved(game: "alibi" | "stack") {
     ...current,
     [game === "alibi" ? "alibiSolved" : "stackSolved"]: true,
   };
-  localStorage.setItem(KEY, JSON.stringify(next));
+  try {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        ...readLocalProgressStorage(),
+        ...next,
+        ...(game === "alibi" ? { alibiSolvedDate: getGameDate() } : {}),
+      }),
+    );
+  } catch {}
   return next;
+}
+
+export type DailyAlibiSavedResult = {
+  schemaVersion: 1;
+  challengeDate: string;
+  challengeNumber: number;
+  puzzleFingerprint: string;
+  accusedSuspectId: string;
+  completed: true;
+  completedAt: string;
+};
+export function getDailyAlibiResult(
+  date = getGameDate(),
+): DailyAlibiSavedResult | null {
+  const results = readLocalProgressStorage().dailyAlibiResults;
+  if (!isRecord(results)) return null;
+  const result = results[date];
+  if (
+    !isRecord(result) ||
+    result.schemaVersion !== 1 ||
+    result.completed !== true ||
+    result.challengeDate !== date ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    typeof result.challengeNumber !== "number" ||
+    !Number.isSafeInteger(result.challengeNumber) ||
+    result.challengeNumber < 0 ||
+    typeof result.puzzleFingerprint !== "string" ||
+    !/^alibi-v1-[0-9a-f]{16}$/.test(result.puzzleFingerprint) ||
+    typeof result.accusedSuspectId !== "string" ||
+    !result.accusedSuspectId ||
+    result.accusedSuspectId.length > 128 ||
+    typeof result.completedAt !== "string" ||
+    !Number.isFinite(Date.parse(result.completedAt))
+  )
+    return null;
+  return {
+    schemaVersion: 1,
+    completed: true,
+    challengeDate: date,
+    challengeNumber: result.challengeNumber,
+    puzzleFingerprint: result.puzzleFingerprint,
+    accusedSuspectId: result.accusedSuspectId,
+    completedAt: result.completedAt,
+  };
+}
+export function getRestoredDailyAlibiState(caseData: DailyAlibiCase) {
+  const saved = getDailyAlibiResult(caseData.challengeDate);
+  if (
+    !saved ||
+    saved.challengeNumber !== caseData.challengeNumber ||
+    saved.puzzleFingerprint !== fingerprintAlibiCase(caseData)
+  )
+    return null;
+  const accused = caseData.suspects.find(
+    (suspect) => suspect.key === saved.accusedSuspectId,
+  );
+  return accused ? { saved, accused } : null;
+}
+export function saveDailyAlibiResult(
+  caseData: DailyAlibiCase,
+  accusedSuspectId: string,
+): DailyAlibiSavedResult | null {
+  const existing = getRestoredDailyAlibiState(caseData);
+  if (existing) return existing.saved;
+  const accused = caseData.suspects.find(
+    (suspect) => suspect.key === accusedSuspectId,
+  );
+  if (!accused || !/^\d{4}-\d{2}-\d{2}$/.test(caseData.challengeDate))
+    return null;
+  const result: DailyAlibiSavedResult = {
+    schemaVersion: 1,
+    completed: true,
+    challengeDate: caseData.challengeDate,
+    challengeNumber: caseData.challengeNumber,
+    puzzleFingerprint: fingerprintAlibiCase(caseData),
+    accusedSuspectId: accused.key,
+    completedAt: new Date().toISOString(),
+  };
+  try {
+    const progress = readLocalProgressStorage();
+    const results = isRecord(progress.dailyAlibiResults)
+      ? progress.dailyAlibiResults
+      : {};
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        ...progress,
+        // Preserve the existing correct-only homepage solved indicator. Incorrect
+        // accusations are still completed and cannot be replayed.
+        alibiSolved: accused.correct,
+        alibiSolvedDate: caseData.challengeDate,
+        dailyAlibiResults: { ...results, [caseData.challengeDate]: result },
+      }),
+    );
+  } catch {}
+  return result;
+}
+export function isDailyAlibiComplete(date = getGameDate()) {
+  return getDailyAlibiResult(date)?.completed === true;
 }
 
 export function getAnonymousId() {

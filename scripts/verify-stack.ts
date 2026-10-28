@@ -129,6 +129,7 @@ async function main() {
       { waitUntil: "networkidle" },
     );
     assert.equal(response?.status(), 200);
+    await page.locator("[data-stack-cell]").first().waitFor();
     assert.equal(
       await page.locator("[data-stack-cell]").count(),
       p.rows * p.cols,
@@ -140,7 +141,7 @@ async function main() {
         .count(),
       0,
     );
-    for (const width of [1440, 1024, 768, 390]) {
+    for (const width of [320, 360, 390, 430, 768, 1024, 1280, 1440, 1920]) {
       await page.setViewportSize({ width, height: 1000 });
       assert(
         await page.evaluate(
@@ -166,6 +167,15 @@ async function main() {
       c = first.anchor[1] + anchor[1];
     await drag(tray, r, c, true);
     assert.equal(await page.locator(".piece-card.placed").count(), 1);
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await drag(cell(r, c), r, c, true);
+      assert.equal(
+        await page.locator(".piece-card.placed").count(),
+        1,
+        "Resizing and repositioning preserve the placed piece",
+      );
+    }
     await drag(cell(r, c), p.rows - 1, p.cols - 1, false);
     assert.equal(
       await page.locator(".piece-card.placed").count(),
@@ -285,7 +295,7 @@ async function main() {
     );
     console.log(
       difficulty,
-      "pointer dragging, rotated placements, invalid restoration, completion, 4 responsive widths: passed",
+      "pointer dragging at 320/390/768/1440, rotations, invalid restoration, completion, 9 responsive widths: passed",
     );
   }
   await page.getByRole("button", { name: "New puzzle", exact: true }).click();

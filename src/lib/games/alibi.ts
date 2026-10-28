@@ -17,6 +17,37 @@ export type AlibiCase = {
   clues: string[];
   suspects: AlibiSuspect[];
 };
+export type DailyAlibiCase = AlibiCase & { challengeDate: string };
+
+// Content identity, independent of display order and Daily date. This is not a
+// security hash; it prevents restoring an accusation against changed case data.
+export function fingerprintAlibiCase(caseData: AlibiCase): string {
+  const content = JSON.stringify([
+    caseData.title,
+    caseData.dek,
+    caseData.briefTitle,
+    caseData.brief,
+    caseData.objective,
+    caseData.clues,
+    [...caseData.suspects]
+      .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+      .map((suspect) => [
+        suspect.key,
+        suspect.initial,
+        suspect.name,
+        suspect.role,
+        suspect.statement,
+        suspect.correct,
+        suspect.explanation,
+      ]),
+  ]);
+  let hash = 0xcbf29ce484222325n;
+  for (let i = 0; i < content.length; i++)
+    hash =
+      ((hash ^ BigInt(content.charCodeAt(i))) * 0x100000001b3n) &
+      0xffffffffffffffffn;
+  return `alibi-v1-${hash.toString(16).padStart(16, "0")}`;
+}
 
 export const dailyAlibi: AlibiCase = {
   challengeNumber: 127,

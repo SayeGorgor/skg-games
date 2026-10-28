@@ -17,18 +17,29 @@ export function Brand() {
 export function SiteHeader({ compact = false }: { compact?: boolean }) {
   return (
     <header className={`site-header ${compact ? "compact" : ""}`}>
-      <Brand />
-      <nav>
-        <Link href="/">Games</Link>
-        <a href="#archive">Archive</a>
-        <a href="#stats">Stats</a>
-      </nav>
-      <div className="header-actions">
-        <ThemeToggle />
-        <span className="streak-pill">12 DAY STREAK</span>
-        <Link className="header-plus" href="/plus">
-          Go ad-free
-        </Link>
+      <div className="header-inner">
+        <Brand />
+        <nav aria-label="Main navigation">
+          <Link href="/">Games</Link>
+          <a href="#archive">Archive</a>
+          <a href="#stats">Stats</a>
+        </nav>
+        <div className="header-actions">
+          <ThemeToggle />
+          <span className="streak-pill header-streak">
+            <span className="sr-only">12 day streak</span>
+            <span className="streak-full" aria-hidden="true">
+              12 DAY STREAK
+            </span>
+            <span className="streak-short" aria-hidden="true">
+              12 days
+            </span>
+          </span>
+          <Link className="header-plus" href="/plus">
+            <span className="plus-full">Go ad-free</span>
+            <span className="plus-short">Plus</span>
+          </Link>
+        </div>
       </div>
     </header>
   );

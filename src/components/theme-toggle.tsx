@@ -23,12 +23,14 @@ export function ThemeToggle() {
   return (
     <div className="theme-switch" aria-label="Color theme">
       <button
+        aria-pressed={theme === "light"}
         className={theme === "light" ? "active" : ""}
         onClick={() => choose("light")}
       >
         LIGHT
       </button>
       <button
+        aria-pressed={theme === "dark"}
         className={theme === "dark" ? "active" : ""}
         onClick={() => choose("dark")}
       >

@@ -15,7 +15,10 @@
     "test": "vitest run",
     "generate:stack-dailies": "tsx scripts/generate-stack-dailies.ts",
     "test:stack-browser": "tsx scripts/verify-stack.ts",
-    "test:stack-persistence": "tsx scripts/verify-stack-persistence.ts"
+    "test:stack-persistence": "tsx scripts/verify-stack-persistence.ts",
+    "test:alibi-persistence": "tsx scripts/verify-alibi-persistence.ts",
+    "test:alibi-theme": "tsx scripts/verify-alibi-theme.ts",
+    "test:responsive": "tsx scripts/verify-responsive.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "1.2.0",
