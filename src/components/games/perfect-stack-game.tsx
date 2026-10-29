@@ -487,41 +487,43 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
     <main className="site-shell">
       <SiteHeader />
       <section className="stack-page container">
-        <div className="stack-intro">
-          <div>
-            <span className="streak-pill">
-              {puzzle.mode === "daily"
-                ? `DAILY PUZZLE #${puzzle.challengeNumber}`
-                : "PRACTICE"}
-            </span>
-            <span className="date-label">
-              {puzzle.challengeDate
-                ? new Date(
-                    puzzle.challengeDate + "T12:00:00Z",
-                  ).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "short",
-                    day: "numeric",
-                    timeZone: "UTC",
-                  })
-                : `Seed: ${puzzle.seed}`}
-            </span>
+        <div className="stack-heading">
+          <div className="stack-intro">
+            <div>
+              <span className="streak-pill">
+                {puzzle.mode === "daily"
+                  ? `DAILY PUZZLE #${puzzle.challengeNumber}`
+                  : "PRACTICE"}
+              </span>
+              <span className="date-label">
+                {puzzle.challengeDate
+                  ? new Date(
+                      puzzle.challengeDate + "T12:00:00Z",
+                    ).toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "UTC",
+                    })
+                  : `Seed: ${puzzle.seed}`}
+              </span>
+            </div>
+            <h1>Perfect Stack</h1>
+            <p className="lede">Use every piece. Fill every square.</p>
           </div>
-          <h1>Perfect Stack</h1>
-          <p className="lede">Use every piece. Fill every square.</p>
+          <nav className="button-row" aria-label="Game mode">
+            {(["daily", "practice"] as const).map((mode) => (
+              <Link
+                className={`button ${puzzle.mode === mode ? "primary" : "secondary"}`}
+                key={mode}
+                href={urlFor(mode, puzzle.difficulty)}
+              >
+                {mode.toUpperCase()}
+              </Link>
+            ))}
+            <StackHowToPlay />
+          </nav>
         </div>
-        <nav className="button-row" aria-label="Game mode">
-          {(["daily", "practice"] as const).map((mode) => (
-            <Link
-              className={`button ${puzzle.mode === mode ? "primary" : "secondary"}`}
-              key={mode}
-              href={urlFor(mode, puzzle.difficulty)}
-            >
-              {mode.toUpperCase()}
-            </Link>
-          ))}
-          <StackHowToPlay />
-        </nav>
         <nav className="stack-difficulties" aria-label="Difficulty">
           {(Object.keys(STACK_DIFFICULTIES) as StackDifficulty[]).map((d) => {
             const config = STACK_DIFFICULTIES[d];
@@ -535,12 +537,16 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
               >
                 <strong>
                   {d.toUpperCase()}{" "}
-                  {puzzle.mode === "daily" &&
-                    (result ? "★".repeat(result.stars) : "○")}
+                  {puzzle.mode === "daily" && (
+                    <span className="stack-difficulty-status">
+                      {result ? "★".repeat(result.stars) : "○"}
+                    </span>
+                  )}
                 </strong>
                 <span>
                   {config.rows} &times; {config.cols} ·{" "}
-                  {config.pieceSizes.length} pieces · {config.time}
+                  {config.pieceSizes.length} pieces
+                  <span className="stack-difficulty-time"> · {config.time}</span>
                 </span>
                 <small>{config.description}</small>
               </Link>

@@ -122,6 +122,10 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
               <Link href="/">Games</Link>
               <Link href="/#archive">Archive</Link>
               <Link href="/#stats">Stats</Link>
+              <div className="header-menu-mobile-actions">
+                {!viewer.premium && <Link href="/plus/start">Subscribe</Link>}
+                <AccountControls />
+              </div>
             </nav>
           </div>
           <Brand />

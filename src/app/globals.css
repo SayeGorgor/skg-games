@@ -279,6 +279,9 @@ button:disabled {
 .header-menu nav[hidden] {
   display: none;
 }
+.header-menu-mobile-actions {
+  display: none;
+}
 .header-menu nav a {
   display: flex;
   align-items: center;
@@ -423,9 +426,12 @@ html.theme-changing .header-account .header-sign-in {
   }
 }
 @media (max-width: 1023px) {
+  .header-left .brand {
+    display: none;
+  }
   .header-inner {
-    grid-template-rows: 48px auto;
-    gap: 8px 16px;
+    grid-template-columns: 44px auto minmax(0, 1fr);
+    gap: 16px;
   }
   .header-left {
     grid-column: 1;
@@ -435,8 +441,8 @@ html.theme-changing .header-account .header-sign-in {
     grid-row: 1;
   }
   .header-actions {
-    grid-column: 1 / -1;
-    grid-row: 2;
+    grid-column: 3;
+    grid-row: 1;
   }
 }
 @media (max-width: 767px) {
@@ -444,26 +450,57 @@ html.theme-changing .header-account .header-sign-in {
     padding-block: 8px;
   }
   .header-inner {
-    grid-template-rows: 46px auto auto;
+    grid-template-columns: 44px minmax(0, 1fr);
     gap: 8px;
   }
   .header-left {
-    grid-column: 1 / -1;
+    grid-column: 1;
   }
   .header-streak {
-    grid-row: 2;
-    font-size: 12px;
-    padding: 8px 12px;
+    display: none;
   }
   .header-actions {
-    grid-row: 3;
-    flex-wrap: wrap;
-    width: 100%;
+    grid-column: 2;
+    grid-row: 1;
     gap: 6px;
+  }
+  .header-actions > .header-plus,
+  .header-actions > .header-account {
+    display: none;
+  }
+  .header-menu-mobile-actions {
+    display: flex;
+    flex-direction: column;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .header-menu-mobile-actions .header-account {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0;
+  }
+  .header-menu-mobile-actions .header-account a,
+  .header-menu-mobile-actions .header-account button {
+    justify-content: flex-start;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    font: inherit;
+  }
+  .header-menu-mobile-actions .header-account a:hover,
+  .header-menu-mobile-actions .header-account button:hover {
+    background: var(--bg-raised);
+    color: var(--text);
   }
   .header-actions .theme-switch {
     width: 96px;
+    height: 44px;
     flex-shrink: 0;
+  }
+  .header-actions .theme-switch button {
+    min-height: 40px;
   }
   .header-plus {
     padding-inline: 8px;
@@ -955,6 +992,9 @@ video {
   font-size: clamp(36px, 5vw, 64px);
   margin: 14px 0;
 }
+.stack-heading {
+  display: contents;
+}
 .stack-intro > div {
   display: flex;
   gap: 12px;
@@ -1210,6 +1250,10 @@ video {
   color: var(--text-2);
   font-size: 13px;
 }
+.stack-difficulties .stack-difficulty-status {
+  color: inherit;
+  font: inherit;
+}
 @media (max-width: 1023px) {
   .stack-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -1244,9 +1288,10 @@ video {
   .stack-difficulties a {
     padding: 12px 8px;
   }
-  .stack-difficulties small {
-    font-size: 12px;
-    line-height: 1.4;
+  .stack-difficulties small,
+  .stack-difficulties .stack-difficulty-time,
+  .stack-difficulties .stack-difficulty-status {
+    display: none;
   }
   .stack-difficulties strong {
     font-size: 13px;
@@ -1269,13 +1314,40 @@ video {
   .stack-page > .button-row > * {
     flex: 1 1 140px;
   }
-  .stack-page > nav[aria-label="Game mode"] {
+  .stack-heading {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+    align-items: center;
   }
-  .stack-page > nav[aria-label="Game mode"] > .stack-help-button {
-    grid-column: 1 / -1;
-    margin-left: 0;
+  .stack-heading .stack-intro,
+  .stack-heading nav[aria-label="Game mode"] {
+    display: contents;
+  }
+  .stack-heading .stack-intro > div {
+    grid-area: 1 / 1 / 2 / -1;
+  }
+  .stack-heading h1 {
+    grid-area: 2 / 1 / 3 / -1;
+    padding-right: 56px;
+  }
+  .stack-heading .lede {
+    grid-area: 3 / 1 / 4 / -1;
+  }
+  .stack-heading nav[aria-label="Game mode"] > a {
+    grid-row: 4;
+  }
+  .stack-heading .stack-help-button {
+    grid-area: 2 / 2 / 3 / 3;
+    justify-self: end;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    margin: 0;
+  }
+  .stack-heading .stack-help-label {
+    display: none;
   }
   .stack-intro .streak-pill {
     white-space: normal;
@@ -1414,7 +1486,7 @@ video {
   margin-left: auto;
   gap: 8px;
 }
-.stack-help-button > span {
+.stack-help-button > span:first-child {
   display: grid;
   place-items: center;
   width: 20px;

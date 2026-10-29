@@ -17,7 +17,7 @@ async function main() {
         .locator(".theme-switch")
         .getByRole("button", { name: theme.toUpperCase(), exact: true })
         .click();
-      for (const width of [320, 390, 768, 1024, 1440, 1920]) {
+      for (const width of [320, 390, 767, 768, 1023, 1024, 1440, 1920]) {
         await page.setViewportSize({ width, height: 900 });
         const toggle = page.getByRole("button", {
             name: "Navigation menu",
@@ -51,20 +51,59 @@ async function main() {
           };
         });
         assert(!positions.overflow);
-        assert(positions.menu.right <= positions.logo.left);
-        assert(
-          Math.abs(positions.menu.centerY - positions.logo.centerY) < 1,
-          "Menu and logo must share a vertical center",
+        assert.equal(
+          await page.locator(".header-left .brand").isVisible(),
+          width >= 1024,
         );
-        if (width >= 1024)
-          for (const item of [positions.menu, positions.logo, positions.actions])
+        if (width >= 1024) {
+          assert(positions.menu.right <= positions.logo.left);
+          assert(
+            Math.abs(positions.menu.centerY - positions.logo.centerY) < 1,
+            "Menu and logo must share a vertical center",
+          );
+        }
+        if (width >= 768)
+          for (const item of [positions.menu, positions.actions])
             assert(
               Math.abs(item.centerY - positions.streak.centerY) < 1,
               "All header controls must share a vertical center",
             );
+        if (width >= 1024)
+          assert(
+            Math.abs(positions.streak.center - width / 2) < 1,
+            "Desktop streak must be centered on the page",
+          );
+        else if (width >= 768) {
+          assert(
+            Math.abs(positions.menu.centerY - positions.streak.centerY) < 1,
+          );
+          assert(positions.streak.right + 8 <= positions.actions.left);
+        } else {
+          assert(
+            Math.abs(positions.menu.centerY - positions.actions.centerY) < 1,
+          );
+          for (const selector of [
+            ".header-streak",
+            ".header-actions > .header-plus",
+            ".header-actions > .header-account",
+          ])
+            assert(!(await page.locator(selector).isVisible()));
+        }
+        const actionCenters = await page
+          .locator(
+            ".header-actions .theme-switch, .header-actions .header-plus:visible, .header-actions .header-account a:visible, .header-actions .header-account button:visible",
+          )
+          .evaluateAll((elements) =>
+            elements.map((element) => {
+              const rect = element.getBoundingClientRect();
+              return rect.top + rect.height / 2;
+            }),
+          );
         assert(
-          Math.abs(positions.streak.center - width / 2) < 1,
-          "Streak must be centered on the page",
+          actionCenters.every(
+            (center) => Math.abs(center - actionCenters[0]) < 1,
+          ),
+          "Action controls must stay aligned on one row",
         );
         assert(
           Math.abs(positions.actions.right - positions.inner.right) < 1,
@@ -72,6 +111,23 @@ async function main() {
         );
         await toggle.click();
         assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+        for (const label of ["Subscribe", "Sign in"])
+          assert.equal(
+            await nav
+              .getByRole("link", { name: label, exact: true })
+              .isVisible(),
+            width < 768,
+          );
+        assert.equal(
+          await nav
+            .getByRole("link", {
+              name: "Subscribe",
+              exact: true,
+              includeHidden: true,
+            })
+            .getAttribute("href"),
+          "/plus/start",
+        );
         for (const label of ["Games", "Archive", "Stats"])
           assert(
             await nav
@@ -87,7 +143,7 @@ async function main() {
         assert(!(await nav.isVisible()));
         assert(await toggle.evaluate((el) => el === document.activeElement));
         await toggle.click();
-        await page.locator(".brand").click();
+        await page.locator(".site-header").click({ position: { x: 2, y: 2 } });
         assert(!(await nav.isVisible()));
         await toggle.click();
         await nav.getByRole("link", { name: "Games", exact: true }).click();

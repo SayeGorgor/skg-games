@@ -180,8 +180,10 @@ export function StackHowToPlay() {
         className="button secondary stack-help-button"
         onClick={() => dialog.current?.showModal()}
         aria-haspopup="dialog"
+        aria-label="How to play"
       >
-        <span aria-hidden="true">?</span> How to play
+        <span aria-hidden="true">?</span>
+        <span className="stack-help-label">How to play</span>
       </button>
       <dialog
         ref={dialog}
