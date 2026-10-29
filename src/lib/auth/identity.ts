@@ -1,3 +1,4 @@
+import { getViewer } from "./viewer";
 export type AppIdentity = {
   userId: string | null;
   isAuthenticated: boolean;
@@ -7,10 +8,14 @@ export type AppIdentity = {
 /**
  * Stable application-facing auth boundary.
  *
- * Keep game/domain code dependent on this shape, not on a vendor SDK. When
- * Neon Auth is enabled, implement this function with createNeonAuth() from
- * @neondatabase/auth/next/server and resolve subscription entitlement from DB.
+ * Game/domain code uses this shape; sessions and subscription entitlement are
+ * resolved only by the canonical server viewer.
  */
 export async function getIdentity(): Promise<AppIdentity> {
-  return { userId: null, isAuthenticated: false, isPlus: false };
+  const viewer = await getViewer();
+  return {
+    userId: viewer.userId,
+    isAuthenticated: viewer.authenticated,
+    isPlus: viewer.premium,
+  };
 }

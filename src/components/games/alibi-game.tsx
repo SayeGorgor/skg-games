@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   useEffect,
+  useEffectEvent,
   useId,
   useRef,
   useState,
@@ -72,10 +73,17 @@ export function AlibiGame({ caseData }: { caseData: DailyAlibiCase }) {
   );
 }
 function AlibiSession({ caseData }: { caseData: DailyAlibiCase }) {
+  const handoffKey = `skg-auth-alibi:${caseData.challengeDate}:${fingerprintAlibiCase(caseData)}`;
   const [initial] = useState(() => getRestoredDailyAlibiState(caseData));
-  const [selected, setSelected] = useState<string | null>(
-    initial?.accused.key ?? null,
-  );
+  const [selected, setSelected] = useState<string | null>(() => {
+    if (initial) return initial.accused.key;
+    try {
+      const key = sessionStorage.getItem(handoffKey);
+      return caseData.suspects.some((s) => s.key === key) ? key : null;
+    } catch {
+      return null;
+    }
+  });
   const [result, setResult] = useState<ReturnType<typeof outcomeFor> | null>(
     () => (initial ? outcomeFor(initial.accused) : null),
   );
@@ -85,6 +93,19 @@ function AlibiSession({ caseData }: { caseData: DailyAlibiCase }) {
   const resultTitleId = useId();
   const resultExplanationId = useId();
   const resultTitle = result?.correct ? "Case closed." : "That alibi holds up.";
+  const saveForAuth = useEffectEvent(() => {
+    if (!result && selected)
+      try {
+        sessionStorage.setItem(handoffKey, selected);
+      } catch {}
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(handoffKey);
+    } catch {}
+    window.addEventListener("skg-auth-leaving", saveForAuth);
+    return () => window.removeEventListener("skg-auth-leaving", saveForAuth);
+  }, [handoffKey]);
 
   useEffect(() => {
     if (result) resultDialog.current?.showModal();

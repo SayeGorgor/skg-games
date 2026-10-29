@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { recordAttempt } from "@/lib/db/attempts";
+import { getIdentity } from "@/lib/auth/identity";
 import { getDailyStackPuzzle } from "@/lib/games/perfect-stack/daily";
 import { generateStackPuzzle } from "@/lib/games/perfect-stack/generator";
 import {
@@ -102,17 +103,24 @@ export async function POST(request: Request) {
     }
   } else if (!integer(body.challengeNumber, 2147483647) || mode !== "daily")
     return NextResponse.json({ error: "Invalid challenge" }, { status: 400 });
-  const persisted = await recordAttempt({
-    gameSlug: body.gameSlug,
-    mode,
-    variant: body.difficulty,
-    puzzleSeed: body.puzzleSeed,
-    challengeNumber: body.challengeNumber,
-    solved: body.solved,
-    durationMs: body.durationMs ?? null,
-    moves: body.moves ?? null,
-    anonymousId: body.anonymousId ?? null,
-    result: body.result ?? {},
-  });
+  const identity = await getIdentity();
+  let persisted = false;
+  try {
+    persisted = await recordAttempt({
+      gameSlug: body.gameSlug,
+      mode,
+      variant: body.difficulty,
+      puzzleSeed: body.puzzleSeed,
+      challengeNumber: body.challengeNumber,
+      solved: body.solved,
+      durationMs: body.durationMs ?? null,
+      moves: body.moves ?? null,
+      anonymousId: body.anonymousId ?? null,
+      userId: identity.userId,
+      result: body.result ?? {},
+    });
+  } catch {
+    /* Local persistence survives a database outage. */
+  }
   return NextResponse.json({ ok: true, persisted });
 }

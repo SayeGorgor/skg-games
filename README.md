@@ -45,6 +45,29 @@ The schema intentionally stores the Neon Auth user ID as text and does **not** c
 
 `/api/cron/publish-daily` runs at 04:05 and 05:05 UTC. The endpoint is idempotent and evaluates the game date in `America/New_York`, so one run lands just after Eastern midnight across both DST and standard time while the other is a harmless no-op/recheck. Set `CRON_SECRET` and send it as `Authorization: Bearer <secret>` for manual/protected invocation.
 
-## Neon Auth note
+## Neon Managed Better Auth
 
-As of this starter's creation, the current Neon Auth Next.js SDK is beta. The project therefore keeps app identity in `src/lib/auth/identity.ts` behind a stable interface. When you enable Neon Auth, wire that adapter to `@neondatabase/auth/next/server` rather than importing the SDK throughout game code.
+Authentication is optional for all free Daily and Practice games. Enable Managed
+Better Auth on the Neon branch, set `NEON_AUTH_BASE_URL` to its Auth URL, and set
+`NEON_AUTH_COOKIE_SECRET` to a secure random secret of at least 32 characters
+(`openssl rand -base64 32`). Leave both blank for anonymous-only demo mode.
+
+Enable email/password and configure verification/email delivery in Neon. Enable
+Google there too: shared Google credentials can be used in development when
+allowed by the branch; configure custom production credentials in Neon before
+launch. Google's Authorized Redirect URI is exactly
+`{NEON_AUTH_BASE_URL}/callback/google`, copied from the branch, not localhost or
+the SKG home URL. Neon then uses the application's SDK callback URL to return to
+SKG. Allow localhost in development and configure your actual deployed origins
+as trusted domains in Neon. Keep Google secrets out of browser environment variables.
+
+Standard new signups receive a dismissible, one-time Plus welcome dialog.
+Premium purchase intent survives signup/sign-in and goes directly to the Plus
+purchase page. Billing remains disconnected; no payment or entitlement is faked.
+Account and purchase actions verify sessions server-side; games remain public.
+Existing profile/claim/subscription tables need no migration for this integration.
+
+See [authentication setup, merge rules, and verification](docs/AUTHENTICATION.md).
+Run `npm run test:auth-browser` with the development server running for responsive
+and mocked-provider checks. Live email and Google flows require the Neon setup
+above and manual provider verification.

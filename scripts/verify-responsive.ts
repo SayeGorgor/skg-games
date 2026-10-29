@@ -97,6 +97,11 @@ async function main() {
         for (const [width, height] of sizes) {
           await page.setViewportSize({ width, height });
           await noOverflow(page, `${path} ${theme} ${width}`);
+          const navigationToggle = page.getByRole("button", {
+            name: "Navigation menu",
+            exact: true,
+          });
+          await navigationToggle.click();
           assert(await page.locator(".site-header nav").isVisible());
           assert(await page.locator(".header-plus").isVisible());
           for (const button of await page
@@ -108,6 +113,7 @@ async function main() {
               `Small header target ${path} ${width}: ${JSON.stringify(b)}`,
             );
           }
+          await navigationToggle.click();
           if (path === "/")
             assert(await page.locator(".today-panel").isVisible());
           if (path.includes("perfect-stack")) {

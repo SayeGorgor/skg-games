@@ -12,6 +12,7 @@ export async function recordAttempt(input: {
   durationMs: number | null;
   moves: number | null;
   anonymousId: string | null;
+  userId?: string | null;
   result: unknown;
 }) {
   const db = getDb();
@@ -46,6 +47,7 @@ export async function recordAttempt(input: {
     moves: input.moves,
     durationMs: input.durationMs,
     anonymousId: input.anonymousId,
+    userId: input.userId ?? null,
     result: input.result as Record<string, unknown>,
   });
   return true;

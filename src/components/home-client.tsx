@@ -95,7 +95,7 @@ export function HomeClient() {
             <a className="button primary" href="#games">
               Play today&apos;s games
             </a>
-            <Link className="button secondary" href="/plus">
+            <Link className="button secondary" href="/plus/start">
               Explore SKG Plus
             </Link>
           </div>
@@ -154,7 +154,7 @@ export function HomeClient() {
             stats, and early access to new titles.
           </p>
           <div className="button-row">
-            <Link className="button light" href="/plus">
+            <Link className="button light" href="/plus/start">
               Try SKG Plus
             </Link>
             <a className="button light" href="#games">

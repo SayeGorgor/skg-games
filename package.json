@@ -18,15 +18,27 @@
     "test:stack-persistence": "tsx scripts/verify-stack-persistence.ts",
     "test:alibi-persistence": "tsx scripts/verify-alibi-persistence.ts",
     "test:alibi-theme": "tsx scripts/verify-alibi-theme.ts",
-    "test:responsive": "tsx scripts/verify-responsive.ts"
+    "test:responsive": "tsx scripts/verify-responsive.ts",
+    "test:auth-browser": "tsx scripts/verify-auth.ts"
   },
   "dependencies": {
+    "@neondatabase/auth": "^0.7.0-beta",
     "@neondatabase/serverless": "1.2.0",
     "dotenv": "^18.0.9",
     "drizzle-orm": "0.45.4",
     "next": "16.4.3",
     "react": "19.3.1",
     "react-dom": "19.3.1"
+  },
+  "overrides": {
+    "@neondatabase/auth": {
+      "better-auth": "1.7.14",
+      "@better-auth/core": "1.7.14",
+      "@better-auth/oauth-provider": "1.7.14",
+      "better-call": "1.4.4",
+      "@better-fetch/fetch": "1.3.3",
+      "zod": "4.6.7"
+    }
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

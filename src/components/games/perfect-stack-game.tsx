@@ -11,6 +11,11 @@ import {
 } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import { AdSlot } from "@/components/ad-slot";
+import {
+  readStackHandoff,
+  saveStackHandoff,
+  clearStackHandoff,
+} from "@/lib/auth/game-handoff";
 import { SiteHeader } from "@/components/site-header";
 import { StackHowToPlay } from "@/components/games/stack-how-to-play";
 import { StackVictory } from "@/components/games/stack-victory";
@@ -96,30 +101,36 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
       // record as a locked completion for the active puzzle.
       delete progress.difficulties[puzzle.difficulty];
     }
-    return { progress, restored };
+    const handoff = restored ? null : readStackHandoff(puzzle);
+    return { progress, restored, handoff };
   });
   const [solved, setSolved] = useState(initial.restored !== null);
   const [progress, setProgress] = useState(initial.progress);
   const completedRef = useRef(initial.restored !== null);
   const [selected, setSelected] = useState(
-    initial.restored ? "" : puzzle.pieces[0].id,
+    initial.restored ? "" : (initial.handoff?.selected ?? puzzle.pieces[0].id),
   );
-  const [rotations, setRotations] = useState<Record<string, number>>(() =>
-    Object.fromEntries(
-      initial.restored?.placements.map((p) => [p.pieceId, p.rotation]) ?? [],
-    ),
+  const [rotations, setRotations] = useState<Record<string, number>>(
+    () =>
+      initial.handoff?.rotations ??
+      Object.fromEntries(
+        initial.restored?.placements.map((p) => [p.pieceId, p.rotation]) ?? [],
+      ),
   );
   const [placements, setPlacements] = useState<Placement[]>(
-    initial.restored?.placements ?? [],
+    initial.restored?.placements ?? initial.handoff?.placements ?? [],
   );
-  const [moves, setMoves] = useState(initial.restored?.moves ?? 0);
+  const [moves, setMoves] = useState(
+    initial.restored?.moves ?? initial.handoff?.moves ?? 0,
+  );
   const [message, setMessage] = useState(
     initial.restored
       ? "Perfect stack. Every square is filled."
       : "Drag a piece onto the board. Tap a piece to rotate it.",
   );
   const [seconds, setSeconds] = useState(
-    Math.floor((initial.restored?.durationMs ?? 0) / 1000),
+    initial.handoff?.seconds ??
+      Math.floor((initial.restored?.durationMs ?? 0) / 1000),
   );
   const [drag, setDrag] = useState<DragState | null>(null);
   const dragRef = useRef<DragState | null>(null);
@@ -127,6 +138,21 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
   const boardRef = useRef<HTMLDivElement>(null);
 
   const started = useRef(false);
+  const saveForAuth = useEffectEvent(() => {
+    if (!solved)
+      saveStackHandoff(puzzle, {
+        placements,
+        rotations,
+        moves,
+        seconds,
+        selected,
+      });
+  });
+  useEffect(() => {
+    clearStackHandoff(puzzle);
+    window.addEventListener("skg-auth-leaving", saveForAuth);
+    return () => window.removeEventListener("skg-auth-leaving", saveForAuth);
+  }, [puzzle]);
 
   useEffect(() => {
     if (solved) return;

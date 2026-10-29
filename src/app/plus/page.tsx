@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
+import { getViewer } from "@/lib/auth/viewer";
 
-export default function PlusPage() {
+export default async function PlusPage() {
+  const viewer = await getViewer();
   return (
     <main className="site-shell">
       <SiteHeader />
@@ -9,9 +11,8 @@ export default function PlusPage() {
         <span className="eyebrow gold">SKG PLUS</span>
         <h1>Play every game without ads.</h1>
         <p className="lede">
-          This starter keeps billing disconnected on purpose. The production
-          flow should use Stripe Checkout, a signed webhook, and the{" "}
-          <code>subscriptions</code> table as the server source of truth.
+          Enjoy SKG Games without display ads. Free Daily and Practice games are
+          always available without a subscription.
         </p>
         <div className="pricing-grid">
           <article className="panel">
@@ -25,6 +26,21 @@ export default function PlusPage() {
             <p>Recommended primary offer once pricing is validated.</p>
           </article>
         </div>
+        {viewer.premium ? (
+          <p>
+            You already have SKG Plus.{" "}
+            <Link href="/account">View your account</Link>
+          </p>
+        ) : viewer.authenticated ? (
+          <p role="status">
+            You’re signed in. Payments aren’t available yet; no subscription has
+            been started.
+          </p>
+        ) : (
+          <Link className="button primary" href="/plus/start">
+            Get SKG Plus
+          </Link>
+        )}
         <Link className="button primary" href="/">
           Back to games
         </Link>
