@@ -38,6 +38,7 @@ async function main() {
               left: r.left,
               right: r.right,
               center: r.left + r.width / 2,
+              centerY: r.top + r.height / 2,
             };
           });
           return {
@@ -51,6 +52,16 @@ async function main() {
         });
         assert(!positions.overflow);
         assert(positions.menu.right <= positions.logo.left);
+        assert(
+          Math.abs(positions.menu.centerY - positions.logo.centerY) < 1,
+          "Menu and logo must share a vertical center",
+        );
+        if (width >= 1024)
+          for (const item of [positions.menu, positions.logo, positions.actions])
+            assert(
+              Math.abs(item.centerY - positions.streak.centerY) < 1,
+              "All header controls must share a vertical center",
+            );
         assert(
           Math.abs(positions.streak.center - width / 2) < 1,
           "Streak must be centered on the page",

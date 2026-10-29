@@ -5,24 +5,24 @@ import { ThemeToggle } from "./theme-toggle";
 import { AccountControls } from "./auth/account-controls";
 import { useViewer } from "./auth/viewer-provider";
 
-export function Brand() {
+export function Brand({ className = "" }: { className?: string }) {
   // Satoshi's visible GAMES outlines span 0.75em, with a 1/64em
   // overshoot below the baseline. Match SKG and the mark at y=6…31.
   const gamesFontSize = 25 / 0.75;
   return (
-    <Link className="brand" href="/" aria-label="SKG Games home">
+    <Link className={`brand ${className}`} href="/" aria-label="SKG Games home">
       <svg
         className="skg-logo"
-        viewBox="0 0 223 46"
-        width="223"
+        viewBox="0 -4.5 227 46"
+        width="227"
         height="46"
         role="img"
         aria-label="SKG Games"
       >
         {/* Three-dot mark */}
-        <circle cx="12.5" cy="11.5" r="5.5" fill="var(--coral)" />
-        <circle cx="5.5" cy="25.5" r="5.5" fill="var(--gold)" />
-        <circle cx="19.5" cy="25.5" r="5.5" fill="var(--blue)" />
+        <circle cx="14.5" cy="11.5" r="4.5" fill="var(--coral)" />
+        <circle cx="7.5" cy="25.5" r="4.5" fill="var(--gold)" />
+        <circle cx="21.5" cy="25.5" r="4.5" fill="var(--blue)" />
 
         {/* SKG */}
         <text
@@ -39,11 +39,13 @@ export function Brand() {
 
         {/* GAMES */}
         <text
-          x="110"
-          y={31 - gamesFontSize / 64}
+          // Position each letter by its visible edges, matching SKG's tight gaps.
+          x="110 137 159 187.5 208.5"
+          y={(31 - gamesFontSize / 64) + 0.1}
           fontFamily='"Satoshi Regular", Arial, sans-serif'
           fontSize={gamesFontSize}
           fontWeight="500"
+          style={{ fontKerning: "none" }}
           fill="currentColor"
         >
           GAMES

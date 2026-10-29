@@ -15,7 +15,14 @@ export function ThemeToggle() {
   }, []);
 
   function choose(next: "light" | "dark") {
-    document.documentElement.dataset.theme = next;
+    const root = document.documentElement;
+    root.classList.add("theme-changing");
+    root.dataset.theme = next;
+    // Commit the new palette without animating; restore transitions for hover.
+    document
+      .querySelectorAll(".header-plus, .header-sign-in")
+      .forEach((button) => void getComputedStyle(button).backgroundColor);
+    root.classList.remove("theme-changing");
     localStorage.setItem("skg-theme", next);
     setTheme(next);
   }

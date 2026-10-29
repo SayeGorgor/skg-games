@@ -39,6 +39,7 @@ export function AccountControls() {
       ) : (
         <>
           <Link
+            className="header-sign-in"
             href={authUrl("sign-in", "standard", path)}
             onClick={(event) => {
               event.preventDefault();
@@ -52,21 +53,6 @@ export function AccountControls() {
             }}
           >
             Sign in
-          </Link>
-          <Link
-            href={authUrl("sign-up", "standard", path)}
-            onClick={(event) => {
-              event.preventDefault();
-              router.push(
-                authUrl(
-                  "sign-up",
-                  "standard",
-                  window.location.pathname + window.location.search,
-                ),
-              );
-            }}
-          >
-            Sign up
           </Link>
         </>
       )}

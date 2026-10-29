@@ -350,10 +350,23 @@ button:disabled {
   min-height: 44px;
   min-width: 44px;
   padding: 8px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--bg-inverse);
+  background: var(--bg-inverse);
+  color: var(--bg-surface);
+  transition: background-color 160ms ease, border-color 160ms ease;
   border-radius: 8px;
   font-size: 14px;
   white-space: nowrap;
+}
+.header-plus:hover,
+.header-plus:focus-visible {
+  background: color-mix(in srgb, var(--bg-inverse), white 20%);
+  border-color: color-mix(in srgb, var(--bg-inverse), white 20%);
+}
+html[data-theme="dark"] .header-plus:hover,
+html[data-theme="dark"] .header-plus:focus-visible {
+  background: color-mix(in srgb, var(--bg-inverse), black 20%);
+  border-color: color-mix(in srgb, var(--bg-inverse), black 20%);
 }
 .header-account {
   display: flex;
@@ -379,6 +392,27 @@ button:disabled {
 }
 .header-account [role="alert"] {
   flex-basis: 100%;
+}
+.header-account .header-sign-in {
+  transition-property: background-color, color, border-color;
+  transition-duration: 160ms;
+  transition-timing-function: linear;
+}
+.header-account .header-sign-in:hover,
+.header-account .header-sign-in:focus-visible {
+  background: var(--bg-inverse);
+  border-color: var(--bg-inverse);
+  color: var(--bg-surface);
+}
+html.theme-changing .header-plus,
+html.theme-changing .header-account .header-sign-in {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .header-plus,
+  .header-account .header-sign-in {
+    transition: none;
+  }
 }
 @media (max-width: 1279px) {
   .site-header {
@@ -2034,7 +2068,12 @@ body:has(.stack-help-dialog[open]) {
 .auth-panel h1 {
   font-size: clamp(28px, 4vw, 38px);
   line-height: 1.15;
-  margin-block: 16px;
+  margin-block: 8px;
+}
+.auth-panel .auth-brand {
+  width: 150px;
+  max-width: 100%;
+  pointer-events: none;
 }
 .auth-panel p {
   color: var(--text-2);
@@ -2075,15 +2114,28 @@ body:has(.stack-help-dialog[open]) {
   opacity: 0.6;
   cursor: default;
 }
+.forgot-password-link {
+  margin-top: 8px;
+}
+.forgot-password-link:hover {
+  color: var(--blue);
+  text-decoration: underline;
+}
 .auth-links {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 .auth-links a {
-  min-height: 44px;
+  /* min-height: 44px; */
   display: flex;
   align-items: center;
+}
+.auth-links a:hover {
+  color: var(--blue);
+  text-decoration: underline;
 }
 .auth-error {
   color: var(--red) !important;

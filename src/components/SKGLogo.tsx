@@ -26,7 +26,7 @@ export function SKGLogo() {
 
       {/* GAMES */}
       <text
-        x="109"
+        x="105"
         y="31"
         fontFamily='"Satoshi Regular", Arial, sans-serif'
         fontSize="32.5"

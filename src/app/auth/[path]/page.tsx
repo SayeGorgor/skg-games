@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { SiteHeader } from "@/components/site-header";
+import { Brand, SiteHeader } from "@/components/site-header";
 import { AuthForm } from "@/components/auth/auth-form";
 import { parseAuthIntent, sanitizeReturnTo } from "@/lib/auth/flow";
 import { auth } from "@/lib/auth/server";
@@ -30,12 +30,16 @@ export default async function AuthPage({
       <SiteHeader />
       <section className="container auth-page">
         <div className="panel auth-panel">
-          <span className="eyebrow blue">SKG GAMES</span>
+          {path === "sign-in" || path === "sign-up" ? (
+            <Brand className="auth-brand" />
+          ) : (
+            <span className="eyebrow blue">SKG GAMES</span>
+          )}
           <h1>{title}</h1>
-          <p>
+          {/* <p>
             An account is optional. All free Daily and Practice games are
             available without signing up.
-          </p>
+          </p> */}
           <AuthForm
             mode={path}
             intent={parseAuthIntent(query.intent)}

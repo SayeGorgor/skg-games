@@ -186,19 +186,29 @@ export function AuthForm({
               />
             </label>
           )}
-          {mode !== "forgot-password" && (
-            <label>
-              Password
-              <input
-                name="password"
-                type="password"
-                autoComplete={login ? "current-password" : "new-password"}
-                required
-                minLength={login ? 1 : 8}
-                maxLength={128}
-              />
-            </label>
-          )}
+          <div>
+            {mode !== "forgot-password" && (
+              <label>
+                Password
+                <input
+                  name="password"
+                  type="password"
+                  autoComplete={login ? "current-password" : "new-password"}
+                  required
+                  minLength={login ? 1 : 8}
+                  maxLength={128}
+                />
+              </label>
+            )}
+            {login && (
+              <Link 
+                className="forgot-password-link"
+                href={authUrl("forgot-password", intent, returnTo)}
+              >
+                Forgot password?
+              </Link>
+            )}
+          </div>
           {(signup || mode === "reset-password") && (
             <label>
               Confirm password
@@ -237,20 +247,14 @@ export function AuthForm({
       )}
       {notice && <p role="status">{notice}</p>}
       <div className="auth-links">
-        {login && (
-          <Link href={authUrl("forgot-password", intent, returnTo)}>
-            Forgot password?
-          </Link>
-        )}
         <Link href={authUrl(signup ? "sign-in" : "sign-up", intent, returnTo)}>
-          {signup ? "Already have an account? Sign in" : "Create an account"}
+          {signup ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
         </Link>
         {!login && !signup && (
           <Link href={authUrl("sign-in", intent, returnTo)}>
             Back to sign in
           </Link>
         )}
-        <Link href={returnTo}>Continue playing free</Link>
       </div>
     </>
   );
