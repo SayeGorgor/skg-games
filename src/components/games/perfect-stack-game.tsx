@@ -700,6 +700,7 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
           <aside className="stack-side">
             <section className="piece-tray">
               <span className="eyebrow">PIECES LEFT</span>
+              <p className="stack-tray-hint">Tap to rotate · drag to place</p>
               <div className="piece-grid">
                 {puzzle.pieces.map((piece) => {
                   const placed = placements.some((p) => p.pieceId === piece.id);
