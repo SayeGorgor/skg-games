@@ -205,9 +205,11 @@ button:disabled {
   background: var(--bg-page);
 }
 .site-header {
+  --header-scale: 0.85;
+  --header-content-scale: calc(var(--header-scale) * 1.1);
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  padding: 12px var(--header-gutter);
+  padding: calc(12px * var(--header-scale)) var(--header-gutter);
   position: relative;
   z-index: 5;
 }
@@ -215,13 +217,15 @@ button:disabled {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 16px;
+  gap: calc(16px * var(--header-content-scale));
   width: min(100%, 1440px);
-  min-height: 62px;
+  min-height: calc(62px * var(--header-scale));
   margin-inline: auto;
 }
 .header-inner > * {
   min-width: 0;
+  /* Scale each group uniformly, including text, icons and dropdown contents. */
+  zoom: var(--header-content-scale);
 }
 .header-left {
   display: flex;
@@ -328,6 +332,7 @@ button:disabled {
   letter-spacing: 0.06em;
   min-width: 44px;
   min-height: 44px;
+  font-weight: bold;
 }
 .theme-switch button.active {
   background: var(--bg-inverse);
@@ -360,6 +365,7 @@ button:disabled {
   border-radius: 8px;
   font-size: 14px;
   white-space: nowrap;
+  font-weight: bold;
 }
 .header-plus:hover,
 .header-plus:focus-visible {
@@ -430,8 +436,8 @@ html.theme-changing .header-account .header-sign-in {
     display: none;
   }
   .header-inner {
-    grid-template-columns: 44px auto minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: calc(44px * var(--header-content-scale)) auto minmax(0, 1fr);
+    gap: calc(16px * var(--header-content-scale));
   }
   .header-left {
     grid-column: 1;
@@ -447,11 +453,11 @@ html.theme-changing .header-account .header-sign-in {
 }
 @media (max-width: 767px) {
   .site-header {
-    padding-block: 8px;
+    padding-block: calc(8px * var(--header-scale));
   }
   .header-inner {
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 8px;
+    grid-template-columns: calc(44px * var(--header-content-scale)) minmax(0, 1fr);
+    gap: calc(8px * var(--header-content-scale));
   }
   .header-left {
     grid-column: 1;

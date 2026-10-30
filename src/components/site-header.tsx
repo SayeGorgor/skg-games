@@ -41,7 +41,7 @@ export function Brand({ className = "" }: { className?: string }) {
         <text
           // Position each letter by its visible edges, matching SKG's tight gaps.
           x="110 137 159 187.5 208.5"
-          y={(31 - gamesFontSize / 64) + 0.1}
+          y={(31 - gamesFontSize / 64) + 0.13}
           fontFamily='"Satoshi Regular", Arial, sans-serif'
           fontSize={gamesFontSize}
           fontWeight="500"
