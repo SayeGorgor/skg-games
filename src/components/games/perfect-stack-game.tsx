@@ -19,6 +19,7 @@ import {
 import { SiteHeader } from "@/components/site-header";
 import { StackHowToPlay } from "@/components/games/stack-how-to-play";
 import { StackVictory } from "@/components/games/stack-victory";
+import "./perfect-stack-layout.css";
 import {
   getAnonymousId,
   markStackDailySolved,
@@ -136,6 +137,30 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
   const dragRef = useRef<DragState | null>(null);
   const suppressClickRef = useRef(false);
   const boardRef = useRef<HTMLDivElement>(null);
+  const pieceGridRef = useRef<HTMLDivElement>(null);
+  const optionsRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const close = (event: Event) => {
+      const options = optionsRef.current;
+      if (!options?.open) return;
+      if (event instanceof KeyboardEvent && event.key === "Escape") {
+        options.open = false;
+        options.querySelector("summary")?.focus();
+      } else if (
+        event instanceof globalThis.PointerEvent &&
+        !options.contains(event.target as Node)
+      ) {
+        options.open = false;
+      }
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, []);
 
   const started = useRef(false);
   const saveForAuth = useEffectEvent(() => {
@@ -322,22 +347,31 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
 
   const scrollDrag = useEffectEvent((elapsed: number) => {
     const current = dragRef.current;
-    if (!current?.active) return;
-    const edge = 80;
+    const tray = pieceGridRef.current;
+    if (!current?.active || !tray) return;
+    const rect = tray.getBoundingClientRect();
+    if (
+      current.clientX < rect.left ||
+      current.clientX > rect.right ||
+      current.clientY < rect.top ||
+      current.clientY > rect.bottom
+    )
+      return;
+    const edge = Math.min(40, rect.height / 3);
     const direction =
-      current.clientY < edge
+      current.clientY < rect.top + edge
         ? -1
-        : current.clientY > window.innerHeight - edge
+        : current.clientY > rect.bottom - edge
           ? 1
           : 0;
     if (!direction) return;
-    const before = window.scrollY;
+    const before = tray.scrollTop;
     // Keep scrolling at the same speed on high refresh rate screens.
-    window.scrollBy({
+    tray.scrollBy({
       top: (direction * 360 * elapsed) / 1000,
       behavior: "instant",
     });
-    if (window.scrollY !== before) {
+    if (tray.scrollTop !== before) {
       updateDrag(projectDrag(current, current.clientX, current.clientY));
     }
   });
@@ -484,291 +518,379 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
   const fmt = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
   return (
-    <main className="site-shell">
-      <SiteHeader />
-      <section className="stack-page container">
-        <div className="stack-heading">
-          <div className="stack-intro">
-            <div>
-              <span className="streak-pill">
-                {puzzle.mode === "daily"
-                  ? `DAILY PUZZLE #${puzzle.challengeNumber}`
-                  : "PRACTICE"}
-              </span>
-              <span className="date-label">
-                {puzzle.challengeDate
-                  ? new Date(
-                      puzzle.challengeDate + "T12:00:00Z",
-                    ).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "short",
-                      day: "numeric",
-                      timeZone: "UTC",
-                    })
-                  : `Seed: ${puzzle.seed}`}
-              </span>
-            </div>
-            <h1>Perfect Stack</h1>
-            <p className="lede">Use every piece. Fill every square.</p>
-          </div>
-          <nav className="button-row" aria-label="Game mode">
-            {(["daily", "practice"] as const).map((mode) => (
-              <Link
-                className={`button ${puzzle.mode === mode ? "primary" : "secondary"}`}
-                key={mode}
-                href={urlFor(mode, puzzle.difficulty)}
-              >
-                {mode.toUpperCase()}
-              </Link>
-            ))}
-            <StackHowToPlay />
-          </nav>
-        </div>
-        <nav className="stack-difficulties" aria-label="Difficulty">
-          {(Object.keys(STACK_DIFFICULTIES) as StackDifficulty[]).map((d) => {
-            const config = STACK_DIFFICULTIES[d];
-            const result = progress?.difficulties[d];
-            return (
-              <Link
-                aria-current={puzzle.difficulty === d ? "page" : undefined}
-                className="panel"
-                key={d}
-                href={urlFor(puzzle.mode, d)}
-              >
-                <strong>
-                  {d.toUpperCase()}{" "}
-                  {puzzle.mode === "daily" && (
-                    <span className="stack-difficulty-status">
-                      {result ? "★".repeat(result.stars) : "○"}
-                    </span>
-                  )}
-                </strong>
-                <span>
-                  {config.rows} &times; {config.cols} ·{" "}
-                  {config.pieceSizes.length} pieces
-                  <span className="stack-difficulty-time"> · {config.time}</span>
-                </span>
-                <small>{config.description}</small>
-              </Link>
-            );
-          })}
-        </nav>
-        {puzzle.mode === "practice" && (
-          <div className="button-row">
-            <button
-              className="button"
-              onClick={() => {
-                window.location.href =
-                  urlFor("practice", puzzle.difficulty) +
-                  "&seed=" +
-                  crypto.randomUUID().slice(0, 8);
-              }}
-            >
-              New puzzle
-            </button>
-            <button
-              className="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(
-                    window.location.origin +
-                      window.location.pathname +
-                      urlFor("practice", puzzle.difficulty) +
-                      "&seed=" +
-                      puzzle.seed,
-                  );
-                  setMessage("Challenge link copied.");
-                } catch {
-                  setMessage(
-                    "Copy the seed from the heading to share this puzzle.",
-                  );
-                }
-              }}
-            >
-              Copy challenge
-            </button>
-          </div>
-        )}
-        {solved && (
-          <StackVictory
-            puzzle={puzzle}
-            placements={placements}
-            moves={moves}
-            seconds={seconds}
-            progress={progress}
-            stars={initial.restored?.stars}
-          />
-        )}
-        <div className="stack-layout">
-          <div className="stat-row">
-            <div>
-              <strong>{fmt}</strong>
-              <small>TIME</small>
-            </div>
-            <div>
-              <strong>{moves}</strong>
-              <small>MOVES</small>
-            </div>
-            <div>
-              <strong>{puzzle.pieceCount}</strong>
-              <small>OPTIMAL</small>
-            </div>
-          </div>
-
-          <section className="stack-board-card">
-            <div className="board-heading">
+    <main className="site-shell stack-game-shell">
+      <div className="stack-primary">
+        <SiteHeader />
+        <section className="stack-page container">
+          <div className="stack-heading">
+            <div className="stack-intro">
               <div>
-                <span className="eyebrow blue">
-                  {puzzle.mode === "daily" ? "TODAY'S BOARD" : "PRACTICE BOARD"}
+                <span className="streak-pill">
+                  {puzzle.mode === "daily"
+                    ? `DAILY PUZZLE #${puzzle.challengeNumber}`
+                    : "PRACTICE"}
                 </span>
-                <p>
-                  {puzzle.rows} &times; {puzzle.cols} &bull; {remaining.length}{" "}
-                  pieces left
-                </p>
+                <span className="date-label">
+                  {puzzle.challengeDate
+                    ? new Date(
+                        puzzle.challengeDate + "T12:00:00Z",
+                      ).toLocaleDateString("en-US", {
+                        weekday: "long",
+                        month: "short",
+                        day: "numeric",
+                        timeZone: "UTC",
+                      })
+                    : `Seed: ${puzzle.seed}`}
+                </span>
               </div>
-              <span className="streak-pill">{moves} MOVES</span>
+              <h1>Perfect Stack</h1>
+              <p className="lede">Use every piece. Fill every square.</p>
             </div>
-            <div
-              className="stack-grid"
-              ref={boardRef}
-              style={{
-                gridTemplateColumns: `repeat(${puzzle.cols}, minmax(0, 1fr))`,
-              }}
-            >
-              {Array.from({ length: puzzle.rows * puzzle.cols }, (_, i) => {
-                const cell: [number, number] = [
-                  Math.floor(i / puzzle.cols),
-                  i % puzzle.cols,
-                ];
-                const k = key(cell);
-
-                const pid = placedMap.get(k);
-                const piece = pid
-                  ? puzzle.pieces.find((p) => p.id === pid)
-                  : null;
-                const previewed = dragPreview.has(k);
-                return (
-                  <button
-                    key={k}
-                    aria-label={`Row ${cell[0] + 1}, column ${cell[1] + 1}`}
-                    data-stack-cell="true"
-                    data-row={cell[0]}
-                    data-col={cell[1]}
-                    className={`stack-cell target ${piece?.color || ""} ${previewed ? "drag-preview" : ""} ${previewed && !drag?.valid ? "drag-invalid" : ""}`}
-                    style={
-                      previewed && draggingPiece
-                        ? ({
-                            "--drag-preview-color": `var(--${draggingPiece.color})`,
-                          } as CSSProperties)
-                        : undefined
-                    }
-                    onPointerDown={(event) => {
-                      if (pid) startDrag(event, pid);
-                      else if (!dragRef.current)
-                        suppressClickRef.current = false;
-                    }}
-                    onPointerMove={moveDrag}
-                    onPointerUp={(event) => endDrag(event)}
-                    onPointerCancel={(event) => endDrag(event, true)}
-                    onLostPointerCapture={(event) => endDrag(event, true)}
-                    onClick={(event) => {
-                      if (suppressClickRef.current && event.detail !== 0) {
-                        suppressClickRef.current = false;
-                        return;
-                      }
-                      suppressClickRef.current = false;
-                      if (solved) return;
-                      if (pid) {
-                        setSelected(pid);
-                        setPlacements((p) =>
-                          p.filter((x) => x.pieceId !== pid),
-                        );
-                        setMessage(
-                          "Piece picked up. Rotate it in the tray or place it again.",
-                        );
-                      } else if (selected) tryPlace(selected, cell);
-                    }}
-                  />
-                );
-              })}
-            </div>
-            <p className="board-message">
-              <i />
-              {boardMessage}
-            </p>
-          </section>
-          <aside className="stack-side">
-            <section className="piece-tray">
-              <span className="eyebrow">PIECES LEFT</span>
-              <p className="stack-tray-hint">Tap to rotate · drag to place</p>
-              <div className="piece-grid">
-                {puzzle.pieces.map((piece) => {
-                  const placed = placements.some((p) => p.pieceId === piece.id);
-                  const cells = oriented(piece, rotations[piece.id] ?? 0);
-                  return (
-                    <button
-                      onPointerDown={(event) => startDrag(event, piece.id)}
-                      onPointerMove={moveDrag}
-                      onPointerUp={(event) => endDrag(event)}
-                      onPointerCancel={(event) => endDrag(event, true)}
-                      onLostPointerCapture={(event) => endDrag(event, true)}
-                      onClick={(event) => {
-                        if (solved) return;
-                        if (suppressClickRef.current && event.detail !== 0) {
-                          suppressClickRef.current = false;
-                          return;
-                        }
-                        suppressClickRef.current = false;
-                        setSelected(piece.id);
-                        if (placed) {
-                          setPlacements((p) =>
-                            p.filter((x) => x.pieceId !== piece.id),
-                          );
-                          setMessage("Piece picked up. Tap again to rotate.");
-                        } else rotatePiece(piece.id);
-                      }}
-                      key={piece.id}
-                      disabled={solved}
-                      aria-pressed={selected === piece.id}
-                      aria-label={`${piece.id}: drag to place, or click to select and rotate`}
-                      className={`piece-card ${selected === piece.id && !placed ? "selected" : ""} ${placed ? "placed" : ""} ${drag?.active && drag.pieceId === piece.id ? "drag-source" : ""}`}
+            {!solved && <StackHowToPlay />}
+            {solved && (
+              <StackVictory
+                puzzle={puzzle}
+                placements={placements}
+                moves={moves}
+                seconds={seconds}
+                progress={progress}
+                stars={initial.restored?.stars}
+              />
+            )}
+            <details className="stack-options" ref={optionsRef}>
+              <summary
+                className="button"
+                aria-label="Game options"
+                title="Game options"
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 7h16M4 17h16M9 4v6M15 14v6" />
+                </svg>
+              </summary>
+              <div className="stack-options-panel">
+                <nav className="button-row" aria-label="Game mode">
+                  {(["daily", "practice"] as const).map((mode) => (
+                    <Link
+                      className={`button ${puzzle.mode === mode ? "primary" : "secondary"}`}
+                      key={mode}
+                      href={urlFor(mode, puzzle.difficulty)}
                     >
-                      <PieceShape piece={piece} cells={cells} />
-                      <small>
-                        {placed
-                          ? "Placed"
-                          : piece.id === "green-o"
-                            ? "Square"
-                            : "Tap to rotate"}
-                      </small>
+                      {mode.toUpperCase()}
+                    </Link>
+                  ))}
+                </nav>
+                <nav className="stack-difficulties" aria-label="Difficulty">
+                  {(Object.keys(STACK_DIFFICULTIES) as StackDifficulty[]).map(
+                    (d) => {
+                      const config = STACK_DIFFICULTIES[d];
+                      const result = progress?.difficulties[d];
+                      return (
+                        <Link
+                          aria-current={
+                            puzzle.difficulty === d ? "page" : undefined
+                          }
+                          className="panel"
+                          key={d}
+                          href={urlFor(puzzle.mode, d)}
+                        >
+                          <strong>
+                            {d.toUpperCase()}{" "}
+                            {puzzle.mode === "daily" && (
+                              <span className="stack-difficulty-status">
+                                {result ? "★".repeat(result.stars) : "○"}
+                              </span>
+                            )}
+                          </strong>
+                          <span>
+                            {config.rows} &times; {config.cols} ·{" "}
+                            {config.pieceSizes.length} pieces
+                            <span className="stack-difficulty-time">
+                              {" "}
+                              · {config.time}
+                            </span>
+                          </span>
+                          <small>{config.description}</small>
+                        </Link>
+                      );
+                    },
+                  )}
+                </nav>
+                {puzzle.mode === "practice" && (
+                  <div className="button-row">
+                    <button
+                      className="button"
+                      onClick={() => {
+                        window.location.href =
+                          urlFor("practice", puzzle.difficulty) +
+                          "&seed=" +
+                          crypto.randomUUID().slice(0, 8);
+                      }}
+                    >
+                      New puzzle
                     </button>
-                  );
-                })}
+                    <button
+                      className="button"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(
+                            window.location.origin +
+                              window.location.pathname +
+                              urlFor("practice", puzzle.difficulty) +
+                              "&seed=" +
+                              puzzle.seed,
+                          );
+                          setMessage("Challenge link copied.");
+                        } catch {
+                          setMessage(
+                            "Copy the seed from the heading to share this puzzle.",
+                          );
+                        }
+                      }}
+                    >
+                      Copy challenge
+                    </button>
+                  </div>
+                )}
               </div>
-            </section>
-            <div className="stack-controls">
-              <button className="button primary" onClick={check}>
-                Check solution
-              </button>
-              <button
-                className="button secondary"
-                onClick={undo}
-                disabled={solved || !placements.length}
-              >
-                Undo
-              </button>
-              <button
-                className="button secondary"
-                onClick={reset}
-                disabled={solved}
-              >
-                Reset
-              </button>
+            </details>
+          </div>
+          <div
+            className="stack-layout"
+            id="perfect-stack-play"
+            role="region"
+            aria-label="Perfect Stack gameplay"
+            data-stack-solved={solved ? "true" : undefined}
+            tabIndex={-1}
+            style={
+              {
+                "--board-cols": puzzle.cols,
+                "--piece-max-cells": Math.max(
+                  ...puzzle.pieces.map((piece) => piece.cells.length),
+                ),
+              } as CSSProperties
+            }
+          >
+            <div className="stat-row">
+              <div>
+                <strong>{fmt}</strong>
+                <small>TIME</small>
+              </div>
+              <div>
+                <strong>{moves}</strong>
+                <small>MOVES</small>
+              </div>
+              <div>
+                <strong>{puzzle.pieceCount}</strong>
+                <small>OPTIMAL</small>
+              </div>
             </div>
-            <AdSlot />
-          </aside>
-        </div>
-      </section>
+
+            <section className="stack-board-card">
+              <div className="board-heading">
+                <div>
+                  <span className="eyebrow blue">
+                    {puzzle.mode === "daily"
+                      ? "TODAY'S BOARD"
+                      : "PRACTICE BOARD"}
+                  </span>
+                  <p>
+                    {puzzle.rows} &times; {puzzle.cols} &bull;{" "}
+                    {remaining.length} pieces left
+                  </p>
+                </div>
+                <span className="streak-pill">{moves} MOVES</span>
+              </div>
+              <div className="stack-board-viewport">
+                <div
+                  className="stack-grid"
+                  ref={boardRef}
+                  style={
+                    {
+                      "--board-rows": puzzle.rows,
+                      "--board-cols": puzzle.cols,
+                      gridTemplateColumns: `repeat(${puzzle.cols}, minmax(0, 1fr))`,
+                      gridTemplateRows: `repeat(${puzzle.rows}, minmax(0, 1fr))`,
+                    } as CSSProperties
+                  }
+                >
+                  {Array.from({ length: puzzle.rows * puzzle.cols }, (_, i) => {
+                    const cell: [number, number] = [
+                      Math.floor(i / puzzle.cols),
+                      i % puzzle.cols,
+                    ];
+                    const k = key(cell);
+
+                    const pid = placedMap.get(k);
+                    const piece = pid
+                      ? puzzle.pieces.find((p) => p.id === pid)
+                      : null;
+                    const previewed = dragPreview.has(k);
+                    return (
+                      <button
+                        key={k}
+                        aria-label={`Row ${cell[0] + 1}, column ${cell[1] + 1}`}
+                        data-stack-cell="true"
+                        data-row={cell[0]}
+                        data-col={cell[1]}
+                        data-stack-piece={pid}
+                        className={`stack-cell target ${piece?.color || ""} ${previewed ? "drag-preview" : ""} ${previewed && !drag?.valid ? "drag-invalid" : ""}`}
+                        style={
+                          previewed && draggingPiece
+                            ? ({
+                                "--drag-preview-color": `var(--${draggingPiece.color})`,
+                              } as CSSProperties)
+                            : undefined
+                        }
+                        onPointerDown={(event) => {
+                          if (pid) startDrag(event, pid);
+                          else if (!dragRef.current)
+                            suppressClickRef.current = false;
+                        }}
+                        onPointerMove={moveDrag}
+                        onPointerUp={(event) => endDrag(event)}
+                        onPointerCancel={(event) => endDrag(event, true)}
+                        onLostPointerCapture={(event) => endDrag(event, true)}
+                        onClick={(event) => {
+                          if (suppressClickRef.current && event.detail !== 0) {
+                            suppressClickRef.current = false;
+                            return;
+                          }
+                          suppressClickRef.current = false;
+                          if (solved) return;
+                          if (pid) {
+                            setSelected(pid);
+                            setPlacements((p) =>
+                              p.filter((x) => x.pieceId !== pid),
+                            );
+                            setMessage(
+                              "Piece picked up. Rotate it in the tray or place it again.",
+                            );
+                          } else if (selected) tryPlace(selected, cell);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+              <p className="board-message" role="status">
+                <i />
+                {boardMessage}
+              </p>
+            </section>
+            <aside className="stack-side">
+              <section className="piece-tray" aria-label="Pieces">
+                <span className="eyebrow">
+                  PIECES LEFT · {remaining.length}
+                </span>
+                <p className="stack-tray-hint">
+                  <span className="piece-tray-count">
+                    PIECES LEFT · {remaining.length}
+                  </span>
+                  <span>Swipe to scroll</span>
+                </p>
+                <div
+                  className="piece-grid"
+                  ref={pieceGridRef}
+                  tabIndex={0}
+                  role="region"
+                  aria-label="Scrollable puzzle pieces"
+                >
+                  {puzzle.pieces.map((piece) => {
+                    const placed = placements.some(
+                      (p) => p.pieceId === piece.id,
+                    );
+                    const cells = oriented(piece, rotations[piece.id] ?? 0);
+                    return (
+                      <button
+                        onPointerDown={(event) => {
+                          if (
+                            event.pointerType !== "touch" ||
+                            (event.target as Element).closest(
+                              ".piece-drag-handle",
+                            )
+                          )
+                            startDrag(event, piece.id);
+                        }}
+                        onPointerMove={moveDrag}
+                        onPointerUp={(event) => endDrag(event)}
+                        onPointerCancel={(event) => endDrag(event, true)}
+                        onLostPointerCapture={(event) => endDrag(event, true)}
+                        onClick={(event) => {
+                          if (solved) return;
+                          if (suppressClickRef.current && event.detail !== 0) {
+                            suppressClickRef.current = false;
+                            return;
+                          }
+                          suppressClickRef.current = false;
+                          setSelected(piece.id);
+                          if (placed) {
+                            setPlacements((p) =>
+                              p.filter((x) => x.pieceId !== piece.id),
+                            );
+                            setMessage("Piece picked up. Tap again to rotate.");
+                          } else rotatePiece(piece.id);
+                        }}
+                        key={piece.id}
+                        disabled={solved}
+                        aria-pressed={selected === piece.id}
+                        aria-label={`${piece.id}: drag to place, or click to select and rotate`}
+                        className={`piece-card ${selected === piece.id && !placed ? "selected" : ""} ${placed ? "placed" : ""} ${drag?.active && drag.pieceId === piece.id ? "drag-source" : ""}`}
+                      >
+                        <span
+                          className="piece-drag-handle"
+                          aria-hidden="true"
+                          title="Drag piece"
+                        >
+                          ⠿
+                        </span>
+                        <span className="piece-viewport">
+                          <PieceShape piece={piece} cells={cells} />
+                        </span>
+                        <small>
+                          {placed
+                            ? "Placed"
+                            : piece.id === "green-o"
+                              ? "Square"
+                              : "Tap to rotate"}
+                        </small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+              <div className="stack-controls">
+                <button className="button primary" onClick={check}>
+                  Check solution
+                </button>
+                <button
+                  className="button secondary"
+                  onClick={undo}
+                  disabled={solved || !placements.length}
+                >
+                  Undo
+                </button>
+                <button
+                  className="button secondary"
+                  onClick={reset}
+                  disabled={solved}
+                >
+                  Reset
+                </button>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </div>
+      <AdSlot placement="post-gameplay" />
       <footer className="site-footer">
         <span>SKG GAMES • PERFECT STACK</span>
         <Link href="/">Back to games</Link>
@@ -825,12 +947,16 @@ function PieceShape({
   return (
     <span
       className="piece-shape"
-      style={{
-        gridTemplateColumns: `repeat(${maxC + 1}, ${cellSize === undefined ? "var(--tray-cell-size, 18px)" : `${cellSize}px`})`,
-        gridTemplateRows: `repeat(${maxR + 1}, ${cellHeight === undefined ? "var(--tray-cell-size, 18px)" : `${cellHeight}px`})`,
-        columnGap: gap ?? "var(--tray-cell-gap, 4px)",
-        rowGap: rowGap ?? "var(--tray-cell-gap, 4px)",
-      }}
+      style={
+        {
+          "--piece-cols": maxC + 1,
+          "--piece-rows": maxR + 1,
+          gridTemplateColumns: `repeat(${maxC + 1}, ${cellSize === undefined ? "var(--tray-cell-size, 18px)" : `${cellSize}px`})`,
+          gridTemplateRows: `repeat(${maxR + 1}, ${cellHeight === undefined ? "var(--tray-cell-size, 18px)" : `${cellHeight}px`})`,
+          columnGap: gap ?? "var(--tray-cell-gap, 4px)",
+          rowGap: rowGap ?? "var(--tray-cell-gap, 4px)",
+        } as CSSProperties
+      }
     >
       {Array.from({ length: (maxR + 1) * (maxC + 1) }, (_, i) => {
         const c: [number, number] = [

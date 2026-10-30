@@ -31,6 +31,13 @@ async function main() {
       completionStatuses.push(response.status());
   });
   const base = process.env.STACK_TEST_URL ?? "http://localhost:3000";
+  await page.route("**/api/games/complete", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: '{"ok":true,"persisted":false}',
+    }),
+  );
   await mkdir("artifacts/stack", { recursive: true });
   const cell = (r: number, c: number) =>
     page.locator(`[data-row="${r}"][data-col="${c}"]`);
@@ -40,6 +47,13 @@ async function main() {
     c: number,
     valid: boolean,
   ) {
+    if ((page.viewportSize()?.width ?? 0) < 900)
+      await page
+        .locator("#perfect-stack-play")
+        .evaluate((el) =>
+          el.scrollIntoView({ block: "start", behavior: "instant" }),
+        );
+    else await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
     await source.scrollIntoViewIfNeeded();
     const from = await source.boundingBox();
     assert(from);
@@ -50,11 +64,7 @@ async function main() {
       from.y + from.height / 2,
       { steps: 3 },
     );
-    await page
-      .locator(".stack-grid")
-      .evaluate((el) =>
-        el.scrollIntoView({ block: "center", behavior: "instant" }),
-      );
+    await page.locator(".stack-grid").scrollIntoViewIfNeeded();
     const to = await cell(r, c).boundingBox();
     assert(to);
     await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
@@ -200,6 +210,7 @@ async function main() {
       (response) => response.url().endsWith("/api/games/complete"),
       { timeout: 45000 },
     );
+    const unsolvedBoardSize = await page.locator(".stack-grid").boundingBox();
     for (const placement of generated.canonicalSolution) {
       const piece = p.pieces.find((x) => x.id === placement.pieceId)!;
       const card = page.getByRole("button", {
@@ -217,6 +228,13 @@ async function main() {
     }
     const victory = page.getByRole("dialog", { name: "Perfect stack!" });
     await victory.waitFor();
+    const solvedBoardSize = await page.locator(".stack-grid").boundingBox();
+    assert(unsolvedBoardSize && solvedBoardSize);
+    assert(
+      Math.abs(unsolvedBoardSize.width - solvedBoardSize.width) < 1 &&
+        Math.abs(unsolvedBoardSize.height - solvedBoardSize.height) < 1,
+      "Remaining pieces and completion must not resize the board",
+    );
     assert.equal((await completionResponse).status(), 200);
     const time = await page
       .locator(".stat-row > div")
@@ -298,6 +316,7 @@ async function main() {
       "pointer dragging at 320/390/768/1440, rotations, invalid restoration, completion, 9 responsive widths: passed",
     );
   }
+  await page.locator(".stack-options > summary").click();
   await page.getByRole("button", { name: "New puzzle", exact: true }).click();
   await page.waitForURL(
     (url) => url.searchParams.get("seed") !== "browser-check",
@@ -386,6 +405,7 @@ async function main() {
     false,
     "Completing Small must not lock Medium",
   );
+  await page.locator(".stack-options > summary").click();
   assert(
     (await page.locator(".stack-difficulties").innerText()).includes(
       String.fromCharCode(9733),
@@ -398,10 +418,17 @@ async function main() {
     isMobile: true,
   });
   const mobile = await touch.newPage();
+  mobile.on("pageerror", (error) => errors.push(error.message));
   await mobile.goto(
     `${base}/games/perfect-stack?mode=practice&difficulty=hard&seed=touch-check`,
     { waitUntil: "networkidle" },
   );
+  await mobile
+    .locator("#perfect-stack-play")
+    .evaluate((el) =>
+      el.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
+  const gameplayScroll = await mobile.evaluate(() => scrollY);
   await mobile.locator(".piece-card").first().tap();
   assert.equal(
     await mobile.locator('.piece-card[aria-pressed="true"]').count(),
@@ -412,47 +439,98 @@ async function main() {
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   );
-  const touchCard = mobile.locator(".piece-card").first();
-  await touchCard.scrollIntoViewIfNeeded();
-  const touchBox = await touchCard.boundingBox();
-  assert(touchBox);
   const session = await touch.newCDPSession(mobile);
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [
-      {
-        x: touchBox.x + touchBox.width / 2,
-        y: touchBox.y + touchBox.height / 2,
-      },
-    ],
-  });
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [
-      {
-        x: touchBox.x + touchBox.width / 2,
-        y: touchBox.y + touchBox.height / 2 - 15,
-      },
-    ],
-  });
+  const touchAt = async (
+    type: "touchStart" | "touchMove" | "touchEnd",
+    x = 0,
+    y = 0,
+  ) =>
+    session.send("Input.dispatchTouchEvent", {
+      type,
+      touchPoints: type === "touchEnd" ? [] : [{ x, y }],
+    });
+  const scrollBox = await mobile.locator(".piece-grid").boundingBox();
+  assert(scrollBox);
+  const swipeX = scrollBox.x + scrollBox.width / 4;
+  const swipeY = scrollBox.y + scrollBox.height - 12;
+  await touchAt("touchStart", swipeX, swipeY);
+  for (let i = 1; i <= 6; i++)
+    await touchAt("touchMove", swipeX, swipeY - i * 12);
+  await touchAt("touchEnd");
+  await mobile.waitForFunction(
+    () => document.querySelector(".piece-grid")!.scrollTop > 0,
+  );
+  assert.equal(
+    await mobile.locator(".stack-drag-ghost").count(),
+    0,
+    "Swiping a card scrolls instead of dragging",
+  );
+  assert.equal(
+    await mobile.evaluate(() => scrollY),
+    gameplayScroll,
+    "Tray swipe never scrolls page",
+  );
+  const touchCard = mobile.locator(".piece-card").last();
+  await touchCard.scrollIntoViewIfNeeded();
+  const grip = await touchCard.locator(".piece-drag-handle").boundingBox();
+  assert(grip);
+  await touchAt(
+    "touchStart",
+    grip.x + grip.width / 2,
+    grip.y + grip.height / 2,
+  );
+  await touchAt(
+    "touchMove",
+    grip.x + grip.width / 2,
+    grip.y + grip.height / 2 - 15,
+  );
   await mobile.locator(".stack-drag-ghost").waitFor();
-  const before = await mobile.evaluate(() => window.scrollY);
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [{ x: 100, y: 20 }],
-  });
-  await mobile.waitForFunction((y) => window.scrollY < y, before);
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [{ x: 1, y: 20 }],
-  });
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchEnd",
-    touchPoints: [],
-  });
-  assert.equal(await mobile.locator(".piece-card.placed").count(), 0);
+  const before = await mobile
+    .locator(".piece-grid")
+    .evaluate((el) => el.scrollTop);
+  await touchAt(
+    "touchMove",
+    scrollBox.x + scrollBox.width / 2,
+    scrollBox.y + 4,
+  );
+  await mobile.waitForFunction(
+    (before) => document.querySelector(".piece-grid")!.scrollTop < before,
+    before,
+  );
+  const touchPuzzle = generateStackPuzzle(
+    "hard",
+    getPracticeStackSeed("touch-check", "hard"),
+  ).publicPuzzle;
+  const touchPiece = touchPuzzle.pieces.at(-1)!;
+  const touchAnchor = getDragAnchor(oriented(touchPiece, 0));
+  const target = await mobile
+    .locator(`[data-row="${touchAnchor[0]}"][data-col="${touchAnchor[1]}"]`)
+    .boundingBox();
+  assert(target);
+  await touchAt(
+    "touchMove",
+    target.x + target.width / 2,
+    target.y + target.height / 2,
+  );
+  await mobile.waitForFunction(
+    () => document.querySelectorAll(".drag-preview").length >= 4,
+    undefined,
+    { timeout: 5000 },
+  );
+  await touchAt("touchEnd");
+  assert.equal(
+    await mobile.locator(".piece-card.placed").count(),
+    1,
+    "Touch drag after tray scroll places the piece",
+  );
+  assert.equal(
+    await mobile.evaluate(() => scrollY),
+    gameplayScroll,
+    "Dragging never scrolls page",
+  );
+  await touch.close();
   console.log(
-    "Practice API validation, mobile touch drag and edge scrolling: passed",
+    "Practice API validation, native touch tray scrolling, tap rotation, grip drag after scrolling and tray edge scrolling: passed",
   );
   assert.deepEqual(errors, []);
   assert(

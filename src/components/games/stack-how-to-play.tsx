@@ -32,7 +32,7 @@ const demoBoard = [
 const steps = [
   {
     title: "Pick a piece",
-    text: "Drag a shape from the tray, or select it and tap a square on the board.",
+    text: "Drag a shape from the tray, or select it and tap a square on the board. On touch screens, swipe the tray to scroll and use a piece's grip to drag.",
   },
   {
     title: "Rotate and place",

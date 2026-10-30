@@ -124,8 +124,16 @@ async function main() {
           if (path === "/")
             assert(await page.locator(".today-panel").isVisible());
           if (path.includes("perfect-stack")) {
+            if (width < 900)
+              await page
+                .locator("#perfect-stack-play")
+                .evaluate((el) =>
+                  el.scrollIntoView({ block: "start", behavior: "instant" }),
+                );
             const b = await page.locator(".stack-grid").boundingBox();
-            assert(b && b.width <= 560.5);
+            assert(
+              b && b.width <= 800.5 && b.y >= 0 && b.y + b.height <= height + 1,
+            );
             for (const card of await page.locator(".piece-card").all())
               assert(
                 await card.evaluate((e) => e.scrollWidth <= e.clientWidth + 1),
@@ -134,7 +142,14 @@ async function main() {
             const stats = await page.locator(".stat-row").boundingBox(),
               board = await page.locator(".stack-board-card").boundingBox();
             assert(stats && board);
-            if (width < 1024)
+            const vertical = await page
+              .locator(".stack-layout")
+              .evaluate(
+                (el) =>
+                  getComputedStyle(el).gridTemplateColumns.trim().split(/\s+/)
+                    .length === 1,
+              );
+            if (vertical)
               assert(stats.y < board.y, "Mobile stats must precede board");
           }
           if ([320, 768, 1440].includes(width))

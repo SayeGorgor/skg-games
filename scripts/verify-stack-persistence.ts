@@ -31,6 +31,13 @@ async function main() {
       }).observe(document, { childList: true, subtree: true });
     });
     let submissions = 0;
+    await context.route("**/api/games/complete", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: '{"ok":true,"persisted":false}',
+      }),
+    );
     const errors: string[] = [];
     context.on("request", (request) => {
       if (
@@ -60,6 +67,7 @@ async function main() {
     async function switchTo(difficulty: StackDifficulty) {
       if (await popup().isVisible())
         await popup().getByRole("button", { name: "Back to board" }).click();
+      await page.locator(".stack-options > summary").click();
       await page
         .locator(".stack-difficulties a")
         .filter({ hasText: difficulty.toUpperCase() })

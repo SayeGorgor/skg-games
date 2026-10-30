@@ -1,0 +1,595 @@
+/* Desktop keeps the header inside its viewport budget; mobile overrides below. */
+.stack-game-shell {
+  --stack-sidebar-width: clamp(300px, 32vw, 440px);
+  min-height: 100dvh;
+}
+.stack-game-shell .stack-primary {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.stack-game-shell .stack-page {
+  width: 100%;
+  max-width: 1680px;
+  min-height: 0;
+  padding: clamp(8px, 1.5vh, 16px) var(--page-gutter);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+}
+.stack-game-shell .stack-heading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.stack-game-shell .stack-intro {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+}
+.stack-game-shell .stack-intro h1 {
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  margin: 0;
+  padding: 0;
+}
+.stack-game-shell .stack-intro > div {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+.stack-game-shell .stack-intro .streak-pill,
+.stack-game-shell .date-label {
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 0;
+  background: transparent;
+  white-space: nowrap;
+}
+.stack-game-shell .date-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stack-game-shell .stack-intro .lede {
+  display: none;
+}
+.stack-game-shell .stack-help-button,
+.stack-game-shell .stack-options > summary {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+}
+.stack-game-shell .stack-help-label {
+  display: none;
+}
+.stack-game-shell .stack-victory-reopen {
+  margin: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.stack-options > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.stack-options > summary::-webkit-details-marker {
+  display: none;
+}
+.stack-options-panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(460px, 100%);
+  max-height: calc(
+    100dvh - 160px - env(safe-area-inset-top, 0px) -
+      env(safe-area-inset-bottom, 0px)
+  );
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.16);
+}
+.stack-game-shell .stack-options-panel nav[aria-label="Game mode"] {
+  display: flex;
+  gap: 8px;
+}
+.stack-game-shell .stack-options-panel .button-row > *,
+.stack-game-shell .stack-options-panel nav[aria-label="Game mode"] > a {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.stack-game-shell .stack-difficulties {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 12px 0;
+  gap: 8px;
+}
+.stack-game-shell .stack-difficulties a {
+  padding: 12px 6px;
+}
+.stack-game-shell .stack-difficulties strong {
+  font-size: 13px;
+}
+.stack-game-shell .stack-layout {
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--stack-sidebar-width);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: stretch;
+  container-type: size;
+}
+.stack-game-shell .stack-board-card {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--bg-surface);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.stack-game-shell .board-heading {
+  margin: 0;
+}
+.stack-game-shell .board-heading .eyebrow,
+.stack-game-shell .board-heading > .streak-pill {
+  display: none;
+}
+.stack-game-shell .board-heading p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.stack-board-viewport {
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+.stack-game-shell .stack-grid {
+  width: min(100cqw, 100cqh, 800px);
+  height: auto;
+  aspect-ratio: 1;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  padding: clamp(6px, 1.8cqi, 12px);
+  gap: clamp(2px, 0.7cqi, 6px);
+  border-radius: 14px;
+}
+.stack-game-shell .stack-cell {
+  min-height: 0;
+  aspect-ratio: 1;
+}
+.stack-game-shell .board-message {
+  grid-row: 3;
+  margin: 0;
+  min-height: 36px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.stack-game-shell .stack-side {
+  display: contents;
+}
+.stack-game-shell .stat-row {
+  grid-column: 2;
+  grid-row: 1;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+}
+.stack-game-shell .stat-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-surface);
+}
+.stack-game-shell .stat-row strong {
+  font-size: 24px;
+  line-height: 1.15;
+}
+.stack-game-shell .stat-row small {
+  font-size: 12px;
+  line-height: 1.25;
+  margin: 0;
+}
+.stack-game-shell .piece-tray {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--bg-raised);
+}
+.stack-game-shell .piece-tray > .eyebrow {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.stack-game-shell .stack-tray-hint {
+  display: none;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  white-space: nowrap;
+}
+.piece-tray-count {
+  font-weight: 600;
+}
+.stack-game-shell .piece-grid {
+  --piece-card-min-width: 105px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  overflow-anchor: none;
+  touch-action: pan-y;
+  margin: 4px 0 0;
+  padding: 2px;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--piece-card-min-width), 100%), 1fr)
+  );
+  grid-auto-rows: 106px;
+  align-content: start;
+  gap: 6px;
+  --tray-cell-size: 18px;
+  --tray-cell-gap: 2px;
+}
+.stack-game-shell .piece-card {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  padding: 4px;
+  gap: 0;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  touch-action: pan-y;
+}
+.stack-game-shell .piece-card small {
+  display: none;
+}
+.piece-viewport {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+.piece-viewport .piece-shape {
+  /* Fit only an unusually long/tall shape; ordinary blocks keep their size. */
+  --tray-cell-size: min(
+    18px,
+    calc(
+      (100cqw - (var(--piece-cols) - 1) * var(--tray-cell-gap)) /
+        var(--piece-cols)
+    ),
+    calc(
+      (100cqh - (var(--piece-rows) - 1) * var(--tray-cell-gap)) /
+        var(--piece-rows)
+    )
+  );
+}
+.stack-game-shell .piece-card.selected {
+  outline-offset: -2px;
+}
+.stack-game-shell .piece-card:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+.piece-drag-handle {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  touch-action: none;
+  cursor: grab;
+}
+.stack-game-shell .stack-controls {
+  grid-column: 2;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+}
+.stack-game-shell .stack-controls > :first-child {
+  grid-column: auto;
+}
+.stack-game-shell .stack-controls .button {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+.stack-game-shell > .site-footer {
+  display: none;
+}
+/* Preserve the existing compact desktop layout in short windows. */
+@media (min-width: 900px) and (orientation: landscape) and (max-height: 600px) {
+  .stack-game-shell {
+    --stack-sidebar-width: clamp(260px, 42vw, 380px);
+  }
+  .stack-game-shell .stack-layout {
+    grid-template-columns: minmax(0, 1fr) var(--stack-sidebar-width);
+    gap: 8px;
+  }
+  .stack-game-shell .stack-page {
+    padding-block: 4px;
+    gap: 4px;
+  }
+  .stack-game-shell .stat-row > div {
+    padding: 4px 8px;
+  }
+  .stack-game-shell .stat-row strong {
+    font-size: 20px;
+  }
+  .stack-game-shell .stack-board-card {
+    padding: 6px;
+    gap: 4px;
+  }
+  .stack-game-shell .piece-tray {
+    padding: 6px;
+  }
+}
+@media (pointer: coarse) {
+  .stack-game-shell .stack-tray-hint {
+    display: flex;
+  }
+  .stack-game-shell .piece-tray > .eyebrow {
+    display: none;
+  }
+}
+@media (min-width: 900px) and (orientation: landscape) and (max-height: 420px) {
+  .stack-game-shell .site-header {
+    padding-block: 2px;
+  }
+  .stack-game-shell .header-inner {
+    min-height: 44px;
+  }
+  .stack-game-shell .board-heading,
+  .stack-game-shell .piece-tray > .eyebrow,
+  .stack-game-shell .stack-tray-hint {
+    display: none;
+  }
+  .stack-game-shell .stat-row > div {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: center;
+    padding: 4px;
+    gap: 2px;
+  }
+  .stack-game-shell .stat-row strong {
+    font-size: 18px;
+  }
+}
+
+/* Mobile: site context scrolls away; gameplay owns its own dynamic viewport. */
+@media (max-width: 899px) {
+  .stack-game-shell {
+    padding-bottom: var(--mobile-tab-bar-height, 0px);
+  }
+  .stack-game-shell .stack-primary {
+    display: block;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+  .stack-game-shell .site-header {
+    position: relative;
+    padding-block: calc(8px * var(--header-scale));
+  }
+  .stack-game-shell .header-inner {
+    min-height: calc(62px * var(--header-scale));
+  }
+  .stack-game-shell .stack-page {
+    display: block;
+    padding: 8px 6px 0;
+  }
+  .stack-game-shell .stack-heading {
+    margin-bottom: 8px;
+    min-height: 44px;
+  }
+  .stack-game-shell .stack-layout {
+    height: calc(100vh - var(--mobile-tab-bar-height, 0px));
+    height: calc(100dvh - var(--mobile-tab-bar-height, 0px));
+    padding-block: max(8px, env(safe-area-inset-top, 0px))
+      max(8px, env(safe-area-inset-bottom, 0px));
+    grid-template-columns: minmax(0, 1fr);
+    /* Target useful cells plus board/status spacing; cap the minimum on
+       physically short screens so an inventory row and controls still fit. */
+    grid-template-rows:
+      clamp(32px, 5dvh, 40px)
+      minmax(min(48dvh, calc(var(--board-cols) * 32px + 64px)), 1fr)
+      minmax(0, max-content)
+      44px;
+    gap: 6px;
+    scroll-margin-top: 0;
+  }
+  .stack-game-shell .stat-row {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .stack-game-shell .stat-row > div {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: center;
+    padding: 4px 0;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+  }
+  .stack-game-shell .stat-row strong {
+    font-size: clamp(20px, 3dvh, 22px);
+  }
+  .stack-game-shell .stack-board-card {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    gap: 4px;
+  }
+  .stack-game-shell .board-heading {
+    display: none;
+  }
+  .stack-game-shell .board-message {
+    min-height: 32px;
+    line-height: 16px;
+  }
+  .stack-game-shell .stack-cell:not([data-stack-piece]),
+  .stack-game-shell [data-stack-solved] .stack-cell {
+    touch-action: pan-y;
+  }
+  .stack-game-shell .piece-tray {
+    grid-column: 1;
+    grid-row: 3;
+    padding: 4px;
+    max-height: 45dvh;
+  }
+  .stack-game-shell .piece-tray > .eyebrow {
+    display: block;
+  }
+  .stack-game-shell .stack-tray-hint {
+    display: none;
+  }
+  .stack-game-shell .piece-grid {
+    flex: 0 1 auto;
+    scrollbar-width: thin;
+    grid-auto-rows: max(96px, calc(var(--piece-max-cells) * 16px + 8px));
+    gap: 4px;
+    margin-top: 4px;
+    padding: 2px;
+  }
+  .stack-game-shell .stack-controls {
+    grid-column: 1;
+    grid-row: 4;
+  }
+}
+@media (max-width: 899px) and (orientation: landscape) and (max-height: 600px) {
+  .stack-game-shell {
+    --stack-sidebar-width: clamp(260px, 42vw, 380px);
+  }
+  .stack-game-shell .stack-layout {
+    grid-template-columns: minmax(0, 1fr) var(--stack-sidebar-width);
+    grid-template-rows: auto minmax(0, 1fr) 44px;
+    gap: 8px;
+  }
+  .stack-game-shell .stat-row {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .stack-game-shell .stack-board-card {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .stack-game-shell .piece-tray {
+    grid-column: 2;
+    grid-row: 2;
+    max-height: none;
+  }
+  .stack-game-shell .piece-grid {
+    flex: 1;
+  }
+  .stack-game-shell .stack-controls {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+
+/* Outside .stack-primary: ad height never enters the gameplay budget. */
+.stack-ad-region {
+  margin: 8px env(safe-area-inset-right, 0px)
+    max(24px, env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
+}
+.stack-ad-inner {
+  width: 100%;
+  max-width: 1680px;
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--stack-sidebar-width);
+}
+.stack-game-shell .stack-ad-slot {
+  grid-column: 2;
+  width: 100%;
+  max-width: 100%;
+  height: 250px;
+  margin: 0;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+@media (max-width: 899px) {
+  .stack-ad-region {
+    margin-top: 16px;
+  }
+  .stack-ad-inner {
+    padding-inline: 6px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stack-game-shell .stack-ad-slot {
+    grid-column: 1;
+    height: 100px;
+  }
+}
+@media (max-width: 899px) and (orientation: landscape) and (max-height: 600px) {
+  .stack-ad-inner {
+    grid-template-columns: minmax(0, 1fr) var(--stack-sidebar-width);
+  }
+  .stack-game-shell .stack-ad-slot {
+    grid-column: 2;
+    height: 250px;
+  }
+}

@@ -60,15 +60,16 @@ export function StackVictory({
         className="button secondary stack-victory-reopen"
         onClick={() => dialog.current?.showModal()}
         aria-haspopup="dialog"
+        aria-label="View results"
       >
-        View results
+        Results
       </button>
       <dialog
         ref={dialog}
         className="stack-help-dialog stack-victory-dialog"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        onClose={() => trigger.current?.focus()}
+        onClose={() => trigger.current?.focus({ preventScroll: true })}
         onClick={(event) => {
           if (event.target !== event.currentTarget) return;
           const rect = event.currentTarget.getBoundingClientRect();
