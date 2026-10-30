@@ -41,7 +41,7 @@ export function Brand({ className = "" }: { className?: string }) {
         <text
           // Position each letter by its visible edges, matching SKG's tight gaps.
           x="110 137 159 187.5 208.5"
-          y={(31 - gamesFontSize / 64) + 0.13}
+          y={31 - gamesFontSize / 64 + 0.13}
           fontFamily='"Satoshi Regular", Arial, sans-serif'
           fontSize={gamesFontSize}
           fontWeight="500"
@@ -80,76 +80,82 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
     };
   }, [menuOpen]);
   return (
-    <header className={`site-header ${compact ? "compact" : ""}`}>
-      <div className="header-inner">
-        <div className="header-left">
-          <div
-            className="header-menu"
-            ref={menuRef}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget))
-                setMenuOpen(false);
-            }}
-          >
-            <button
-              ref={menuButton}
-              className="header-menu-toggle"
-              type="button"
-              aria-label="Navigation menu"
-              aria-expanded={menuOpen}
-              aria-controls={menuId}
-              onClick={() => setMenuOpen((open) => !open)}
+    <>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <header className={`site-header ${compact ? "compact" : ""}`}>
+        <div className="header-inner">
+          <div className="header-left">
+            <div
+              className="header-menu"
+              ref={menuRef}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget))
+                  setMenuOpen(false);
+              }}
             >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                aria-hidden="true"
+              <button
+                ref={menuButton}
+                className="header-menu-toggle"
+                type="button"
+                aria-label="Navigation menu"
+                aria-expanded={menuOpen}
+                aria-controls={menuId}
+                onClick={() => setMenuOpen((open) => !open)}
               >
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <nav
-              id={menuId}
-              aria-label="Main navigation"
-              hidden={!menuOpen}
-              onClick={() => setMenuOpen(false)}
-            >
-              <Link href="/">Games</Link>
-              <Link href="/#archive">Archive</Link>
-              <Link href="/#stats">Stats</Link>
-              <div className="header-menu-mobile-actions">
-                {!viewer.premium && <Link href="/plus/start">Subscribe</Link>}
-                <AccountControls />
-              </div>
-            </nav>
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <nav
+                id={menuId}
+                aria-label="Main navigation"
+                hidden={!menuOpen}
+                onClick={() => setMenuOpen(false)}
+              >
+                <Link href="/">Games</Link>
+                <Link href="/#archive">Archive</Link>
+                <Link href="/#stats">Stats</Link>
+                <div className="header-menu-mobile-actions">
+                  {!viewer.premium && <Link href="/plus/start">Subscribe</Link>}
+                  <AccountControls />
+                </div>
+              </nav>
+            </div>
+            <Brand />
           </div>
-          <Brand />
-        </div>
-        <span className="streak-pill header-streak">
-          <span className="sr-only">12 day streak</span>
-          <span className="streak-full" aria-hidden="true">
-            12 DAY STREAK
+          <span className="streak-pill header-streak">
+            <span className="sr-only">12 day streak</span>
+            <span className="streak-full" aria-hidden="true">
+              12 DAY STREAK
+            </span>
+            <span className="streak-short" aria-hidden="true">
+              12 days
+            </span>
           </span>
-          <span className="streak-short" aria-hidden="true">
-            12 days
-          </span>
-        </span>
-        <div className="header-actions">
-          <ThemeToggle />
-          {!viewer.premium && (
-            <Link className="header-plus" href="/plus/start">
-              <span className="plus-full">Go ad-free</span>
-              <span className="plus-short">Plus</span>
-            </Link>
-          )}
-          <AccountControls />
+          <div className="header-actions">
+            <ThemeToggle />
+            {!viewer.premium && (
+              <Link className="header-plus" href="/plus/start">
+                <span className="plus-full">Go ad-free</span>
+                <span className="plus-short">Plus</span>
+              </Link>
+            )}
+            <AccountControls />
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <span id="main-content" className="sr-only" tabIndex={-1} />
+    </>
   );
 }

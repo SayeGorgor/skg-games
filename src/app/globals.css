@@ -64,8 +64,16 @@
   --bg-inverse: #111318;
   --text: #111318;
   --text-2: #555b65;
-  --muted: #777d86;
+  --muted: #60656f;
   --border: #d7d3c8;
+  --control-border: #82796a;
+  --tile-border: #111318;
+  --blue-text: #3157bf;
+  --gold-text: #805b1a;
+  --green-text: #326a4b;
+  --red-text: #9b414d;
+  --focus: #3157bf;
+  color-scheme: light;
   --blue: #4d73e8;
   --gold: #e0a747;
   --green: #5b9c78;
@@ -75,7 +83,8 @@
   --alibi-panel: #fbf8f1;
   --alibi-raised: #f5eee2;
   --alibi-border: #d8d0c2;
-  --alibi-border-strong: #b7a992;
+  --alibi-border-strong: #82796a;
+  --alibi-control-border: #82796a;
   --alibi-text: #26231f;
   --alibi-text2: #645e55;
   --alibi-text-inverse: #fff9f1;
@@ -123,11 +132,21 @@ html[data-theme="dark"] {
   --text-2: #c1bdb6;
   --muted: #8f97a5;
   --border: #333b48;
+  --control-border: #697382;
+  --tile-border: var(--border);
+  /* Text-only corrections for confirmed contrast failures; keep brand fills. */
+  --blue-text: #8ba5ff;
+  --gold-text: var(--gold);
+  --green-text: var(--green);
+  --red-text: #ef9ca3;
+  --focus: var(--blue);
+  color-scheme: dark;
   /* Preserve Alibi's ink, charcoal and warm evidence-paper Dark palette. */
   --alibi-page: #0f1115;
   --alibi-panel: #171a20;
   --alibi-raised: #242832;
   --alibi-border: #383e49;
+  --alibi-control-border: var(--alibi-border);
   --alibi-border-strong: #626977;
   --alibi-text: #f8f4ea;
   --alibi-text2: #aaa7a0;
@@ -203,6 +222,21 @@ button:disabled {
 .site-shell {
   min-height: 100dvh;
   background: var(--bg-page);
+}
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1001;
+  padding: 12px 18px;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text);
+  transform: translateY(calc(-100% - 24px));
+}
+.skip-link:focus {
+  transform: none;
 }
 .site-header {
   --header-scale: 0.85;
@@ -361,7 +395,9 @@ button:disabled {
   border: 1px solid var(--bg-inverse);
   background: var(--bg-inverse);
   color: var(--bg-surface);
-  transition: background-color 160ms ease, border-color 160ms ease;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
   border-radius: 8px;
   font-size: 14px;
   white-space: nowrap;
@@ -406,6 +442,8 @@ html[data-theme="dark"] .header-plus:focus-visible {
   transition-property: background-color, color, border-color;
   transition-duration: 160ms;
   transition-timing-function: linear;
+  font-weight: bold;
+  border-width: 2px;
 }
 .header-account .header-sign-in:hover,
 .header-account .header-sign-in:focus-visible {
@@ -436,7 +474,10 @@ html.theme-changing .header-account .header-sign-in {
     display: none;
   }
   .header-inner {
-    grid-template-columns: calc(44px * var(--header-content-scale)) auto minmax(0, 1fr);
+    grid-template-columns: calc(44px * var(--header-content-scale)) auto minmax(
+        0,
+        1fr
+      );
     gap: calc(16px * var(--header-content-scale));
   }
   .header-left {
@@ -456,7 +497,10 @@ html.theme-changing .header-account .header-sign-in {
     padding-block: calc(8px * var(--header-scale));
   }
   .header-inner {
-    grid-template-columns: calc(44px * var(--header-content-scale)) minmax(0, 1fr);
+    grid-template-columns: calc(44px * var(--header-content-scale)) minmax(
+        0,
+        1fr
+      );
     gap: calc(8px * var(--header-content-scale));
   }
   .header-left {
@@ -530,13 +574,13 @@ html.theme-changing .header-account .header-sign-in {
   color: var(--muted);
 }
 .eyebrow.red {
-  color: var(--red);
+  color: var(--red-text);
 }
 .eyebrow.blue {
-  color: var(--blue);
+  color: var(--blue-text);
 }
 .eyebrow.gold {
-  color: var(--gold);
+  color: var(--gold-text);
 }
 .eyebrow.inverse {
   color: #fff;
@@ -567,8 +611,8 @@ html.theme-changing .header-account .header-sign-in {
   text-align: center;
   white-space: normal;
 }
-:where(a, button):focus-visible {
-  outline: 3px solid var(--blue);
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 img,
@@ -629,6 +673,7 @@ video {
   margin-top: 24px;
 }
 .today-panel {
+  --focus: #8ba5ff;
   background: #111318;
   color: #fff;
   border-radius: 18px;
@@ -888,6 +933,7 @@ video {
   padding: 12px;
 }
 .plus-banner {
+  --focus: #8ba5ff;
   background: #111318;
   color: #fff;
   border-radius: 24px;
@@ -899,6 +945,9 @@ video {
 .plus-banner h2 {
   font-size: clamp(28px, 3vw, 34px);
   margin: 14px 0;
+}
+.plus-banner .eyebrow.gold {
+  color: var(--gold);
 }
 .plus-banner p {
   color: #ddd;
@@ -978,7 +1027,7 @@ video {
   font-size: 42px;
 }
 .pricing-grid .featured {
-  border-color: var(--gold);
+  border-color: var(--gold-text);
 }
 .plus-page code {
   overflow-wrap: anywhere;
@@ -1055,7 +1104,7 @@ video {
   position: relative;
   aspect-ratio: 1;
   border-radius: clamp(4px, 0.6vw, 8px);
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   background: var(--bg-surface);
   min-width: 0;
   padding: 0;
@@ -1376,7 +1425,7 @@ video {
     padding: 0;
     border-radius: 0;
     background: transparent;
-    color: var(--blue);
+    color: var(--blue-text);
     font-size: 11px;
     letter-spacing: 0.04em;
   }
@@ -1420,7 +1469,7 @@ video {
     outline: none;
     background: var(--bg-surface);
     box-shadow: 0 1px 4px rgb(0 0 0 / 0.08);
-    color: var(--blue);
+    color: var(--blue-text);
   }
   .stack-difficulties a > span {
     font-size: 11px;
@@ -1555,7 +1604,7 @@ video {
 }
 .stack-victory-stars {
   display: inline-block;
-  color: var(--gold);
+  color: var(--gold-text);
   font-size: 30px;
   letter-spacing: 6px;
   line-height: 1.3;
@@ -1641,7 +1690,7 @@ video {
   font-size: 13px;
 }
 .stack-victory-daily li > span:last-child {
-  color: var(--green);
+  color: var(--green-text);
 }
 .stack-victory-actions {
   display: flex;
@@ -1804,7 +1853,7 @@ body:has(.stack-help-dialog[open]) {
   line-height: 1.5;
 }
 .stack-help-dialog button:focus-visible {
-  outline: 3px solid var(--blue);
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 @media (max-width: 639px) {
@@ -1941,7 +1990,7 @@ body:has(.stack-help-dialog[open]) {
 .alibi-result-actions > button {
   background: transparent;
   color: var(--alibi-text);
-  border-color: var(--alibi-border);
+  border-color: var(--alibi-control-border);
 }
 .alibi-result-dialog :is(button, a):focus-visible {
   outline: 3px solid var(--alibi-focus);
@@ -2108,7 +2157,7 @@ body:has(.stack-help-dialog[open]) {
 }
 .suspect-card {
   background: var(--alibi-panel);
-  border: 1px solid var(--alibi-border);
+  border: 1px solid var(--alibi-control-border);
   border-radius: 16px;
   padding: clamp(18px, 1.7vw, 24px);
   color: var(--alibi-text);
@@ -2349,7 +2398,7 @@ body:has(.stack-help-dialog[open]) {
   width: 100%;
   min-width: 0;
   min-height: 48px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: 8px;
   padding: 10px 12px;
   color: var(--text);
@@ -2361,7 +2410,7 @@ body:has(.stack-help-dialog[open]) {
   width: 100%;
 }
 .auth-form input:focus-visible {
-  outline: 3px solid var(--blue);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 .auth-form :disabled {
@@ -2370,9 +2419,14 @@ body:has(.stack-help-dialog[open]) {
 }
 .forgot-password-link {
   margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .forgot-password-link:hover {
-  color: var(--blue);
+  color: var(--blue-text);
   text-decoration: underline;
 }
 .auth-links {
@@ -2383,12 +2437,16 @@ body:has(.stack-help-dialog[open]) {
   margin-top: 10px;
 }
 .auth-links a {
-  /* min-height: 44px; */
   display: flex;
   align-items: center;
 }
-.auth-links a:hover {
-  color: var(--blue);
+.auth-links a:not(.button) {
+  min-height: 24px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.auth-links a:not(.button):hover {
+  color: var(--blue-text);
   text-decoration: underline;
 }
 .auth-error {
@@ -2399,6 +2457,7 @@ html[data-theme="dark"] .auth-error {
 }
 .stack-help-dialog.auth-welcome {
   width: 480px;
+  padding: var(--panel-space);
 }
 .auth-welcome p {
   margin-block: 20px;
@@ -2418,4 +2477,47 @@ html[data-theme="dark"] .auth-error {
   font-size: 16px;
   line-height: 1.6;
   color: var(--text-2);
+}
+
+/* Functional light-mode boundaries; decorative panel borders stay subtle. */
+html:not([data-theme="dark"])
+  :is(
+    .header-menu-toggle,
+    .theme-switch,
+    .header-account a,
+    .header-account button,
+    .button,
+    .stack-help-close,
+    .piece-card
+  ) {
+  border-color: var(--control-border);
+}
+html:not([data-theme="dark"]) :is(.button.primary, .header-plus) {
+  border-color: var(--bg-inverse);
+}
+html:not([data-theme="dark"]) .button.alibi-button {
+  border-color: var(--alibi-red);
+}
+html:not([data-theme="dark"]) .alibi-result-dialog .stack-help-close {
+  border-color: var(--alibi-control-border);
+}
+html:not([data-theme="dark"])
+  .stack-cell:is(.blue, .gold, .green, .coral, .violet, .cyan, .rose, .lime) {
+  border: 1px solid var(--tile-border);
+}
+html:not([data-theme="dark"]) .suspect-card.selected {
+  border-width: 2px;
+}
+html:not([data-theme="dark"]) .stack-victory-board rect {
+  stroke: var(--tile-border);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+:is(.site-shell, .alibi-shell) p a:not(.button),
+.alibi-footer a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

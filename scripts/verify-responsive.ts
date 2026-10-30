@@ -103,13 +103,20 @@ async function main() {
           });
           await navigationToggle.click();
           assert(await page.locator(".site-header nav").isVisible());
-          assert(await page.locator(".header-plus").isVisible());
+          assert.equal(
+            await page.locator(".header-plus").isVisible(),
+            width >= 768,
+          );
           for (const button of await page
-            .locator(".theme-switch button,.site-header nav a,.header-plus")
+            .locator(
+              ".theme-switch button:visible,.site-header nav a:visible,.header-plus:visible",
+            )
             .all()) {
             const b = await button.boundingBox();
             assert(
-              b && b.width >= 43.5 && b.height >= 43.5,
+              // WCAG 2.2 AA target minimum; the intentionally scaled header
+              // uses ~37–41px controls and moves account actions into the menu.
+              b && b.width >= 24 && b.height >= 24,
               `Small header target ${path} ${width}: ${JSON.stringify(b)}`,
             );
           }
