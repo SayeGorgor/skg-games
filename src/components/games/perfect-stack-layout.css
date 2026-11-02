@@ -323,7 +323,7 @@
   outline-offset: -3px;
 }
 .piece-drag-handle {
-  display: grid;
+  display: none;
   place-items: center;
   position: absolute;
   right: 0;
@@ -335,6 +335,12 @@
   color: var(--muted);
   touch-action: none;
   cursor: grab;
+}
+/* Touch dragging needs a grip so the rest of the card can scroll the tray. */
+@media (any-pointer: coarse) {
+  .piece-drag-handle {
+    display: grid;
+  }
 }
 .stack-game-shell .stack-controls {
   grid-column: 2;

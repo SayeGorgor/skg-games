@@ -2,7 +2,7 @@
 import { useViewer } from "./auth/viewer-provider";
 
 // Temporary site-wide pause. Set to true to restore existing ad placements.
-const ADS_ENABLED = false;
+const ADS_ENABLED = process.env.NEXT_PUBLIC_ADS_ENABLED === "true";
 
 export function AdSlot({
   mobile = false,

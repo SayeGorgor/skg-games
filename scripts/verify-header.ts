@@ -51,12 +51,33 @@ async function main() {
           };
         });
         assert(!positions.overflow);
+        const oversizedControls = await page.evaluate(() => {
+          const logoHeight = document
+            .querySelector(".header-left .skg-logo")!
+            .getBoundingClientRect().height;
+          return Array.from(
+            document.querySelectorAll(
+              ".header-menu-toggle, .header-actions > .theme-switch, .header-actions > .header-plus, .header-actions > .header-account a, .header-actions > .header-account button, .header-streak",
+            ),
+          )
+            .filter(
+              (element) =>
+                element.getBoundingClientRect().height > logoHeight + 1,
+            )
+            .map((element) => element.className);
+        });
+        assert.deepEqual(
+          oversizedControls,
+          [],
+          `Header controls exceed logo height at ${width}px`,
+        );
         assert.equal(
           await page.locator(".header-left .brand").isVisible(),
-          width >= 1024,
+          true,
         );
-        if (width >= 1024) {
+        {
           assert(positions.menu.right <= positions.logo.left);
+          assert(positions.logo.right <= positions.actions.left);
           assert(
             Math.abs(positions.menu.centerY - positions.logo.centerY) < 1,
             "Menu and logo must share a vertical center",
