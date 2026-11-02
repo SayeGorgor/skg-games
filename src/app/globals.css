@@ -2041,6 +2041,34 @@ body:has(.stack-help-dialog[open]) {
 .alibi-hero {
   padding: clamp(32px, 4.45vw, 64px) 0 clamp(28px, 3.35vw, 48px);
 }
+.alibi-hero-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 328px;
+  align-items: start;
+  gap: clamp(24px, 2.3vw, 32px);
+}
+.alibi-case-heading {
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .alibi-hero-layout {
+    row-gap: 0;
+    grid-template-rows: auto auto auto;
+  }
+  .alibi-case-heading {
+    display: grid;
+    grid-row: 1 / 4;
+    grid-template-rows: subgrid;
+  }
+  .alibi-case-heading .case-pill {
+    justify-self: start;
+  }
+  .alibi-hero-layout > .alibi-stat {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    margin-top: 16px;
+  }
+}
 .case-pill {
   display: inline-flex;
   padding: 8px 16px;
@@ -2054,6 +2082,121 @@ body:has(.stack-help-dialog[open]) {
 .alibi-hero h1 {
   font-size: clamp(34px, 4.4vw, 56px);
   margin: 16px 0;
+}
+.alibi-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+}
+.alibi-heading-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+.alibi-run-button {
+  display: none;
+}
+.alibi-run-dialog {
+  max-width: 440px;
+}
+.alibi-scenario {
+  margin-top: 0;
+  max-width: 760px;
+}
+.alibi-scenario h2 {
+  margin: 0 0 8px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.2;
+}
+.alibi-scenario p {
+  margin: 0;
+  color: var(--alibi-text2);
+  line-height: 1.6;
+}
+.alibi-help-button {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--alibi-border-strong);
+  border-radius: 50%;
+  background: var(--alibi-panel);
+  color: var(--alibi-text);
+  font-size: 22px;
+  font-weight: 600;
+}
+.alibi-help-button:hover {
+  color: var(--alibi-gold);
+  border-color: var(--alibi-gold);
+}
+.alibi-help-intro {
+  color: var(--alibi-text2);
+  font-size: 18px;
+  line-height: 1.5;
+}
+.alibi-guide-steps {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+}
+.alibi-guide-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--alibi-border);
+  border-radius: 12px;
+  background: var(--alibi-raised);
+}
+.alibi-guide-icon {
+  flex: 0 0 44px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--alibi-paper);
+  color: var(--alibi-paper-text);
+}
+.alibi-guide-icon svg {
+  display: block;
+  width: 100%;
+}
+.alibi-guide-steps h3 {
+  margin: 4px 0 8px;
+  font-size: 18px;
+}
+.alibi-guide-steps p,
+.alibi-guide-tip p {
+  margin: 0;
+  color: var(--alibi-text2);
+  line-height: 1.65;
+}
+.alibi-guide-tip {
+  padding: 18px;
+  border-left: 3px solid var(--alibi-gold);
+  background: var(--alibi-raised);
+  border-radius: 0 10px 10px 0;
+}
+.alibi-guide-tip strong {
+  display: block;
+  margin-bottom: 8px;
+}
+.alibi-guide-tip small {
+  display: block;
+  margin-top: 10px;
+  color: var(--alibi-text2);
+}
+.alibi-help-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  color: var(--alibi-text2);
+  font-size: 14px;
 }
 .alibi-hero > p {
   max-width: 760px;
@@ -2304,12 +2447,21 @@ body:has(.stack-help-dialog[open]) {
   overflow-wrap: break-word;
 }
 @media (max-width: 1023px) {
-  .alibi-layout {
+  .alibi-hero-layout > .alibi-stat {
+    display: none;
+  }
+  .alibi-run-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .alibi-layout,
+  .alibi-hero-layout {
     grid-template-columns: minmax(0, 1fr);
   }
   .alibi-rail {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
   .alibi-rail .ad-slot {
@@ -2333,11 +2485,11 @@ body:has(.stack-help-dialog[open]) {
 }
 @media (max-width: 767px) {
   .alibi-rail {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
   .alibi-rail .ad-slot {
     grid-column: 1 / -1;
-    grid-row: 2;
+    grid-row: auto;
     min-height: 100px;
     height: 100px;
   }

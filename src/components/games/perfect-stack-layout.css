@@ -242,10 +242,11 @@
 .stack-game-shell .piece-tray > .eyebrow {
   font-size: 12px;
   line-height: 1.5;
+  margin: 4px 6px;
 }
 .stack-game-shell .stack-tray-hint {
   display: none;
-  margin: 0;
+  margin: 4px 6px;
   font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
@@ -552,6 +553,29 @@
   .stack-game-shell .stack-controls {
     grid-column: 2;
     grid-row: 3;
+  }
+}
+
+@media (max-width: 899px) and (orientation: portrait),
+  (max-width: 899px) and (min-height: 601px) {
+  .stack-game-shell .stack-board-card {
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0;
+  }
+  .stack-game-shell .stack-board-viewport {
+    grid-row: 1;
+    align-items: end;
+  }
+  .stack-game-shell .board-message {
+    grid-row: 2;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    /* Balance the 6px layout gap below the message against the board above. */
+    padding-top: 6px;
+  }
+  .stack-game-shell .board-message i {
+    margin-top: 0;
   }
 }
 

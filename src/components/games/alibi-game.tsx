@@ -11,6 +11,8 @@ import {
 } from "react";
 import { AdSlot } from "@/components/ad-slot";
 import { SiteHeader } from "@/components/site-header";
+import { AlibiHowToPlay } from "./alibi-how-to-play";
+import { AlibiRunStats, AlibiYourRun } from "./alibi-your-run";
 import {
   getAnonymousId,
   getRestoredDailyAlibiState,
@@ -60,7 +62,7 @@ export function AlibiGame({ caseData }: { caseData: DailyAlibiCase }) {
       <main className="alibi-shell">
         <SiteHeader />
         <section className="alibi-hero container" aria-busy="true">
-          <h1>{caseData.title}</h1>
+          <h1>Daily Alibi</h1>
           <p role="status">Loading your case...</p>
         </section>
       </main>
@@ -132,20 +134,35 @@ function AlibiSession({ caseData }: { caseData: DailyAlibiCase }) {
   return (
     <main className="alibi-shell">
       <SiteHeader />
-      <section className="alibi-hero container">
-        <span className="case-pill">
-          CASE #{caseData.challengeNumber} &bull;{" "}
-          {new Date(caseData.challengeDate + "T12:00:00Z")
-            .toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "short",
-              day: "numeric",
-              timeZone: "UTC",
-            })
-            .toUpperCase()}
-        </span>
-        <h1>{caseData.title}</h1>
-        <p>{caseData.dek}</p>
+      <section className="alibi-hero alibi-hero-layout container">
+        <div className="alibi-case-heading">
+          <span className="case-pill">
+            CASE #{caseData.challengeNumber} &bull;{" "}
+            {new Date(caseData.challengeDate + "T12:00:00Z")
+              .toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "short",
+                day: "numeric",
+                timeZone: "UTC",
+              })
+              .toUpperCase()}
+          </span>
+          <div className="alibi-title-row">
+            <h1>Daily Alibi</h1>
+            <div className="alibi-heading-actions">
+              <AlibiHowToPlay />
+              <AlibiYourRun />
+            </div>
+          </div>
+          <div className="alibi-scenario">
+            <h2>{caseData.title}</h2>
+            <p>{caseData.dek}</p>
+          </div>
+        </div>
+        <aside className="alibi-stat" aria-label="Your run">
+          <span className="eyebrow gold">YOUR RUN</span>
+          <AlibiRunStats />
+        </aside>
       </section>
       <section className="container alibi-layout">
         <div className="alibi-main">
@@ -172,31 +189,7 @@ function AlibiSession({ caseData }: { caseData: DailyAlibiCase }) {
           </div>
         </div>
         <aside className="alibi-rail">
-          <div className="alibi-stat">
-            <span className="eyebrow gold">YOUR RUN</span>
-            <strong>14 days</strong>
-            <div>
-              <span>
-                11<small>solved</small>
-              </span>
-              <span>
-                78%<small>accuracy</small>
-              </span>
-            </div>
-          </div>
           <AdSlot />
-          <div className="alibi-how">
-            <h3>How to play</h3>
-            <p>
-              <b>1</b>Read the case
-            </p>
-            <p>
-              <b>2</b>Connect the clues
-            </p>
-            <p>
-              <b>3</b>Accuse one suspect
-            </p>
-          </div>
         </aside>
       </section>
       <section className="container suspects">
