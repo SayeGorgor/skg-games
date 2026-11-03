@@ -140,6 +140,24 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
             <Brand />
           </div>
           <span className="streak-pill header-streak">
+            <svg
+              className="streak-flame"
+              width="22"
+              height="26"
+              viewBox="0 0 24 28"
+              fill="none"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M13 1C14 6 20 8 18 14C20 13 21 11 21 10C23 14 24 17 22 21C20 25 16 27 12 27C6 27 2 23 2 18C2 13 5 10 7 8C7 12 9 13 9 13C8 8 10 4 13 1Z"
+                fill="var(--coral)"
+              />
+              <path
+                d="M13 11C14 15 19 17 18 21C17 24 15 25 12 25C9 25 6 23 7 20C7 18 9 16 10 15C10 18 11 19 11 19C11 16 11 13 13 11Z"
+                fill="var(--gold)"
+              />
+            </svg>
             <span className="sr-only">12 day streak</span>
             <span className="streak-full" aria-hidden="true">
               12 DAY STREAK

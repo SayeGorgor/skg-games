@@ -388,6 +388,16 @@ button:disabled {
   max-width: 100%;
 }
 
+.header-streak {
+  gap: 8px;
+}
+.streak-flame {
+  display: block;
+  flex-shrink: 0;
+  width: 15.84px;
+  height: 18.72px;
+}
+
 .header-plus {
   display: inline-flex;
   align-items: center;

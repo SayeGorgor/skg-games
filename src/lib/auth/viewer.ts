@@ -43,10 +43,35 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     premium: false,
   };
   if (!auth) return empty;
-  const response = await auth.getSession().catch(() => null);
-  const session = response?.data,
-    error = response?.error;
-  if (error || !session?.user) return empty;
+  // const response = await auth.getSession().catch(() => null);
+  // const session = response?.data,
+  //   error = response?.error;
+  // if (error || !session?.user) return empty;
+
+  
+  const response = await auth.getSession().catch((err: unknown) => {
+    console.error(
+      "[SKG Auth] getSession failed:",
+      err instanceof Error ? err.message : "Unknown error"
+    );
+    return null;
+  });
+
+  if (response?.error) {
+    console.error("[SKG Auth] Session error:", {
+      code: response.error.code,
+      message: response.error.message,
+    });
+  }
+
+  if (!response?.data?.user) {
+    console.warn("[SKG Auth] No authenticated user found.");
+    return empty;
+  }
+
+  const session = response.data;
+
+
   const user = session.user;
   let premium = false;
   try {
