@@ -1,9 +1,6 @@
 "use client";
 import { useViewer } from "./auth/viewer-provider";
 
-// Temporary site-wide pause. Set to true to restore existing ad placements.
-const ADS_ENABLED = process.env.NEXT_PUBLIC_ADS_ENABLED === "true";
-
 export function AdSlot({
   mobile = false,
   placement = "default",
@@ -11,8 +8,8 @@ export function AdSlot({
   mobile?: boolean;
   placement?: "default" | "post-gameplay";
 }) {
-  const { viewer } = useViewer();
-  if (!ADS_ENABLED || viewer.premium) return null;
+  const { viewer, adsEnabled } = useViewer();
+  if (!adsEnabled || viewer.premium) return null;
   if (placement === "post-gameplay") {
     return (
       <aside className="stack-ad-region" aria-label="Advertisement placeholder">

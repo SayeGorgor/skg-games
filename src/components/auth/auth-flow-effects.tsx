@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useViewer } from "./viewer-provider";
 export function AuthFlowEffects() {
   const dialog = useRef<HTMLDialogElement>(null);
-  const { viewer } = useViewer();
+  const { viewer, adsEnabled } = useViewer();
   useEffect(() => {
     function leaving(event: MouseEvent) {
       const link = (event.target as Element).closest?.("a");
@@ -29,8 +29,10 @@ export function AuthFlowEffects() {
       "",
       url.pathname + url.search + url.hash,
     );
-    if (viewer.authenticated && !viewer.premium) dialog.current?.showModal();
-  }, [viewer.authenticated, viewer.premium]);
+    if (adsEnabled && viewer.authenticated && !viewer.premium)
+      dialog.current?.showModal();
+  }, [adsEnabled, viewer.authenticated, viewer.premium]);
+  if (!adsEnabled) return null;
   return (
     <dialog
       ref={dialog}

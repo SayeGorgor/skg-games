@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getViewer } from "@/lib/auth/viewer";
 import { SiteHeader } from "@/components/site-header";
+import { adsEnabled } from "@/lib/ads";
 export default async function AccountPage() {
   const viewer = await getViewer();
   if (!viewer.authenticated) redirect("/auth/sign-in?returnTo=%2Faccount");
@@ -13,8 +14,12 @@ export default async function AccountPage() {
           <span className="eyebrow blue">YOUR ACCOUNT</span>
           <h1>{viewer.name || "Your account"}</h1>
           <p>{viewer.email}</p>
-          <h2>{viewer.premium ? "SKG Plus · Ad-free" : "Free membership"}</h2>
-          {!viewer.premium && (
+          <h2>
+            {adsEnabled() && viewer.premium
+              ? "SKG Plus · Ad-free"
+              : "Free membership"}
+          </h2>
+          {adsEnabled() && !viewer.premium && (
             <Link className="button primary" href="/plus/start">
               Get SKG Plus
             </Link>

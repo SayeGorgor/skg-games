@@ -56,7 +56,7 @@ export function Brand({ className = "" }: { className?: string }) {
 }
 
 export function SiteHeader({ compact = false }: { compact?: boolean }) {
-  const { viewer } = useViewer();
+  const { viewer, adsEnabled } = useViewer();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -127,7 +127,12 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
                 <Link href="/#archive">Archive</Link>
                 <Link href="/#stats">Stats</Link>
                 <div className="header-menu-mobile-actions">
-                  {!viewer.premium && <Link href="/plus/start">Subscribe</Link>}
+                  {adsEnabled && !viewer.premium && (
+                    <Link href="/plus/start">Subscribe</Link>
+                  )}
+                  {!adsEnabled && !viewer.authenticated && (
+                    <AccountControls mode="sign-in" />
+                  )}
                   <AccountControls />
                 </div>
               </nav>
@@ -145,11 +150,14 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
           </span>
           <div className="header-actions">
             <ThemeToggle />
-            {!viewer.premium && (
+            {adsEnabled && !viewer.premium && (
               <Link className="header-plus" href="/plus/start">
                 <span className="plus-full">Go ad-free</span>
                 <span className="plus-short">Plus</span>
               </Link>
+            )}
+            {!adsEnabled && !viewer.authenticated && (
+              <AccountControls mode="sign-in" primary />
             )}
             <AccountControls />
           </div>

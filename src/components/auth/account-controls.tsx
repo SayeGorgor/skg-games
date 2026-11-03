@@ -5,8 +5,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import { authUrl } from "@/lib/auth/flow";
 import { useViewer } from "./viewer-provider";
-export function AccountControls() {
-  const { viewer } = useViewer();
+export function AccountControls({
+  mode,
+  primary = false,
+}: {
+  mode?: "sign-in" | "sign-up";
+  primary?: boolean;
+}) {
+  const { viewer, adsEnabled } = useViewer();
+  const authMode = mode ?? (adsEnabled ? "sign-in" : "sign-up");
   const path = usePathname();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -30,7 +37,7 @@ export function AccountControls() {
       {viewer.authenticated ? (
         <>
           <Link href="/account">
-            {viewer.premium ? "Account · Plus" : "Account"}
+            {adsEnabled && viewer.premium ? "Account · Plus" : "Account"}
           </Link>
           <button type="button" disabled={busy} onClick={signOut}>
             {busy ? "Signing out…" : "Sign out"}
@@ -39,20 +46,20 @@ export function AccountControls() {
       ) : (
         <>
           <Link
-            className="header-sign-in"
-            href={authUrl("sign-in", "standard", path)}
+            className={primary ? "header-plus" : "header-sign-in"}
+            href={authUrl(authMode, "standard", path)}
             onClick={(event) => {
               event.preventDefault();
               router.push(
                 authUrl(
-                  "sign-in",
+                  authMode,
                   "standard",
                   window.location.pathname + window.location.search,
                 ),
               );
             }}
           >
-            Sign in
+            {authMode === "sign-up" ? "Sign up" : "Sign in"}
           </Link>
         </>
       )}

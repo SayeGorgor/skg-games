@@ -7,6 +7,7 @@ import { SiteHeader } from "./site-header";
 import { StackMiniBoard } from "./stack-mini-board";
 import { getLocalProgress } from "@/lib/client-progress";
 import { getGameDate } from "@/lib/game-date";
+import { useViewer } from "./auth/viewer-provider";
 
 function AlibiPreview() {
   return (
@@ -56,6 +57,7 @@ function GameCard({ kind }: { kind: "alibi" | "stack" }) {
 }
 
 export function HomeClient() {
+  const { viewer, adsEnabled } = useViewer();
   const [done, setDone] = useState(0);
   const [today, setToday] = useState("");
   useEffect(() => {
@@ -88,16 +90,22 @@ export function HomeClient() {
           </h1>
           <p className="lede">
             Solve a mystery, fit the impossible stack, and return tomorrow for a
-            fresh challenge. Play free with ads or upgrade for an uninterrupted
-            experience.
+            fresh challenge.
+            {adsEnabled &&
+              " Play free with ads or upgrade for an uninterrupted experience."}
           </p>
           <div className="button-row">
             <a className="button primary" href="#games">
               Play today&apos;s games
             </a>
-            <Link className="button secondary" href="/plus/start">
-              Explore SKG Plus
-            </Link>
+            {(adsEnabled || !viewer.authenticated) && (
+              <Link
+                className="button secondary"
+                href={adsEnabled ? "/plus/start" : "/auth/sign-in"}
+              >
+                {adsEnabled ? "Explore SKG Plus" : "Sign in"}
+              </Link>
+            )}
           </div>
         </div>
         <aside className="today-panel">
@@ -130,10 +138,15 @@ export function HomeClient() {
         <div className="panel free-panel">
           <span className="eyebrow">PLAY FREE</span>
           <div className="free-panel-main-text">
-            <h3>Your games, streaks, and archive — supported by ads.</h3>
+            <h3>
+              {adsEnabled
+                ? "Your games, streaks, and archive — supported by ads."
+                : "Your games, streaks, and archive."}
+            </h3>
             <p>
-              Ads appear between game sessions and in reserved spaces, never over
-              the puzzle itself. Your progress stays saved either way.
+              {adsEnabled
+                ? "Ads appear between game sessions and in reserved spaces, never over the puzzle itself. Your progress stays saved either way."
+                : "Enjoy daily challenges and keep building your streak. Your progress stays saved."}
             </p>
           </div>
           <div className="chips">
@@ -145,30 +158,32 @@ export function HomeClient() {
         <AdSlot />
       </section>
 
-      <section className="container plus-banner">
-        <div>
-          <span className="eyebrow gold">SKG PLUS</span>
-          <h2>Free to play. Better without ads.</h2>
-          <p>
-            Remove ads across every game and unlock a deeper archive, richer
-            stats, and early access to new titles.
-          </p>
-          <div className="button-row">
-            <Link className="button light" href="/plus/start">
-              Try SKG Plus
-            </Link>
-            <a className="button light" href="#games">
-              Keep playing free
-            </a>
+      {adsEnabled && (
+        <section className="container plus-banner">
+          <div>
+            <span className="eyebrow gold">SKG PLUS</span>
+            <h2>Free to play. Better without ads.</h2>
+            <p>
+              Remove ads across every game and unlock a deeper archive, richer
+              stats, and early access to new titles.
+            </p>
+            <div className="button-row">
+              <Link className="button light" href="/plus/start">
+                Try SKG Plus
+              </Link>
+              <a className="button light" href="#games">
+                Keep playing free
+              </a>
+            </div>
           </div>
-        </div>
-        <ul>
-          <li>No display ads</li>
-          <li>Full game archive</li>
-          <li>Advanced streak & solve stats</li>
-          <li>Early access to new games</li>
-        </ul>
-      </section>
+          <ul>
+            <li>No display ads</li>
+            <li>Full game archive</li>
+            <li>Advanced streak & solve stats</li>
+            <li>Early access to new games</li>
+          </ul>
+        </section>
+      )}
 
       <footer className="site-footer">
         <span>SKG GAMES • A NEW CHALLENGE EVERY DAY</span>

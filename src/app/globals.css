@@ -424,7 +424,7 @@ html[data-theme="dark"] .header-plus:focus-visible {
   flex-wrap: wrap;
   font-size: 14px;
 }
-.header-account a,
+.header-account a:not(.header-plus),
 .header-account button {
   display: inline-flex;
   align-items: center;
@@ -2597,6 +2597,57 @@ body:has(.stack-help-dialog[open]) {
 }
 .auth-form .button {
   width: 100%;
+}
+.auth-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.auth-separator::before,
+.auth-separator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.google-auth-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Each 40px asset already has 10px of space around its 20px G. */
+  gap: 0;
+  padding-inline: 2px 12px;
+}
+.auth-form .button:has(.google-auth-content) {
+  background: #fff;
+}
+html[data-theme="dark"] .auth-form .button:has(.google-auth-content) {
+  background: #131314;
+}
+.google-auth-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 20px;
+  /* Keep the full asset within the button's existing vertical padding. */
+  overflow: visible;
+}
+.google-auth-icon img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+}
+.google-auth-icon-dark,
+html[data-theme="dark"] .google-auth-icon-light {
+  display: none;
+}
+html[data-theme="dark"] .google-auth-icon-dark {
+  display: block;
 }
 .auth-form input:focus-visible {
   outline: 3px solid var(--focus);

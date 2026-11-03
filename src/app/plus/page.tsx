@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { getViewer } from "@/lib/auth/viewer";
+import { redirect } from "next/navigation";
+import { adsEnabled } from "@/lib/ads";
 
 export default async function PlusPage() {
   const viewer = await getViewer();
+  if (!adsEnabled())
+    redirect(viewer.authenticated ? "/account" : "/auth/sign-in");
   return (
     <main className="site-shell">
       <SiteHeader />

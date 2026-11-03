@@ -19,12 +19,18 @@ const empty: PublicViewer = {
   authenticated: false,
   premium: false,
 };
-const ViewerContext = createContext({ viewer: empty, refresh: async () => {} });
+const ViewerContext = createContext({
+  viewer: empty,
+  adsEnabled: false,
+  refresh: async () => {},
+});
 export function ViewerProvider({
   initial,
+  adsEnabled,
   children,
 }: {
   initial: PublicViewer;
+  adsEnabled: boolean;
   children: ReactNode;
 }) {
   const [viewer, setViewer] = useState(initial);
@@ -46,6 +52,10 @@ export function ViewerProvider({
       document.removeEventListener("visibilitychange", update);
     };
   }, [refresh]);
-  return <ViewerContext value={{ viewer, refresh }}>{children}</ViewerContext>;
+  return (
+    <ViewerContext value={{ viewer, adsEnabled, refresh }}>
+      {children}
+    </ViewerContext>
+  );
 }
 export const useViewer = () => useContext(ViewerContext);

@@ -25,7 +25,29 @@ Browser
    (adapter)  Plus     / Sentry
 ```
 
-## Boundary rules
+## Site-wide advertising switch
+
+`src/lib/ads.ts` reads `NEXT_PUBLIC_ADS_ENABLED`. Only the exact value
+`true` enables advertising and Plus promotion; the default is disabled.
+`ADS_ENABLED` has no effect.
+`RootLayout` passes this value through `ViewerProvider` so client navigation,
+home content, signup effects, and ad placements use the same setting.
+
+When disabled, anonymous navigation offers Sign in and Sign up, the home page
+omits Plus promotions and advertising copy, and account controls omit Plus labels.
+Signup completion suppresses the Plus welcome dialog and treats premium intent
+as standard. Direct `/plus` and `/plus/start` requests redirect to Sign in or,
+for authenticated visitors, Account. Existing subscription entitlements remain
+unchanged. Setting `NEXT_PUBLIC_ADS_ENABLED=true` restores the advertising/Plus experience.
+Restart development or rebuild production after changing the environment setting,
+since Next.js inlines public environment variables at build time.
+
+Run `npx tsx scripts/verify-ads-mode.ts` against the local server to check the
+disabled experience at mobile, tablet, and desktop widths. For an enabled server,
+set `TEST_ADS_ENABLED=true`; set `TEST_BASE_URL` to target a different port.
+The script also checks authenticated client controls using a mocked viewer response.
+
+## Application boundaries
 
 - Game moves stay client-side; do not write every interaction to Postgres.
 - The server is authoritative for published challenge data, final solution validation, subscription entitlement, and cross-device stats.

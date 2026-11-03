@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useRef, useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth/client";
 import { authUrl, type AuthIntent } from "@/lib/auth/flow";
@@ -234,8 +235,31 @@ export function AuthForm({
                     : "Update password"}
           </button>
           {(login || signup) && (
+            <div className="auth-separator">
+              <span>or</span>
+            </div>
+          )}
+          {(login || signup) && (
             <button className="button secondary" type="button" onClick={google}>
-              {busy ? "Connecting…" : "Continue with Google"}
+              <span className="google-auth-content">
+                <span className="google-auth-icon" aria-hidden="true">
+                  <Image
+                    className="google-auth-icon-light"
+                    src="/icons/google_logo_icon_light.svg"
+                    width={40}
+                    height={40}
+                    alt=""
+                  />
+                  <Image
+                    className="google-auth-icon-dark"
+                    src="/icons/google_logo_icon_dark.svg"
+                    width={40}
+                    height={40}
+                    alt=""
+                  />
+                </span>
+                <span>{busy ? "Connecting…" : "Continue with Google"}</span>
+              </span>
             </button>
           )}
         </fieldset>

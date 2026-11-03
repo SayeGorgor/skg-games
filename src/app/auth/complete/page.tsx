@@ -9,13 +9,14 @@ import {
 } from "@/lib/auth/flow";
 import { CompleteAuth } from "@/components/auth/complete-auth";
 import { SiteHeader } from "@/components/site-header";
+import { adsEnabled } from "@/lib/ads";
 export default async function CompletePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const query = await searchParams,
-    intent = parseAuthIntent(query.intent),
+    intent = adsEnabled() ? parseAuthIntent(query.intent) : "standard",
     returnTo = sanitizeReturnTo(query.returnTo),
     viewer = await getViewer();
   if (!viewer.userId)
@@ -30,11 +31,10 @@ export default async function CompletePage({
       <section className="container auth-page">
         <CompleteAuth
           destination={intent === "premium" ? "/plus/start" : returnTo}
-          welcome={shouldShowSignupUpsell(
-            query.new === "1",
-            intent,
-            viewer.premium,
-          )}
+          welcome={
+            adsEnabled() &&
+            shouldShowSignupUpsell(query.new === "1", intent, viewer.premium)
+          }
           flowKey={flowKey}
         />
       </section>

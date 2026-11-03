@@ -5,6 +5,7 @@ import "./globals.css";
 import { getViewer } from "@/lib/auth/viewer";
 import { ViewerProvider } from "@/components/auth/viewer-provider";
 import { AuthFlowEffects } from "@/components/auth/auth-flow-effects";
+import { adsEnabled } from "@/lib/ads";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -40,7 +41,10 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={spaceGrotesk.variable}>
-        <ViewerProvider initial={{ name, email, authenticated, premium }}>
+        <ViewerProvider
+          initial={{ name, email, authenticated, premium }}
+          adsEnabled={adsEnabled()}
+        >
           {children}
           <AuthFlowEffects />
         </ViewerProvider>

@@ -3,6 +3,7 @@ import { Brand, SiteHeader } from "@/components/site-header";
 import { AuthForm } from "@/components/auth/auth-form";
 import { parseAuthIntent, sanitizeReturnTo } from "@/lib/auth/flow";
 import { auth } from "@/lib/auth/server";
+import { adsEnabled } from "@/lib/ads";
 export default async function AuthPage({
   params,
   searchParams,
@@ -42,7 +43,7 @@ export default async function AuthPage({
           </p> */}
           <AuthForm
             mode={path}
-            intent={parseAuthIntent(query.intent)}
+            intent={adsEnabled() ? parseAuthIntent(query.intent) : "standard"}
             returnTo={sanitizeReturnTo(query.returnTo)}
             token={query.token}
             initialError={!!query.error}
