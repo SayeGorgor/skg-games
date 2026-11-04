@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import { authUrl } from "@/lib/auth/flow";
 import { useViewer } from "./viewer-provider";
+import { endResultSession } from "@/lib/results/local";
 export function AccountControls({
   mode,
   primary = false,
@@ -26,6 +27,7 @@ export function AccountControls({
       window.dispatchEvent(new Event("skg-auth-leaving"));
       const result = await authClient.signOut();
       if (result.error) throw new Error();
+      endResultSession();
       window.location.replace(new URL("/", window.location.origin).href);
     } catch {
       setError("Could not sign out. Try again.");

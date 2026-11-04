@@ -24,6 +24,11 @@ The app works without a database by using bundled daily demo content. Add `DATAB
 
 ## Database
 
+Personal game statistics and history are available at `/stats`, including local
+guest results and automatic account synchronization. Apply the additive history
+migration before deploying this feature. See [game statistics architecture,
+migration, and verification](docs/GAME-STATISTICS.md).
+
 ```bash
 npm run db:generate
 npm run db:migrate

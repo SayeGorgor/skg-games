@@ -1,6 +1,7 @@
 import { getViewer } from "@/lib/auth/viewer";
 import { claimAnonymousProgress } from "@/lib/auth/claim";
 import { validAnonymousId } from "@/lib/auth/flow";
+import { accountKey } from "@/lib/auth/account-key";
 export async function POST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return Response.json({ error: "Invalid request origin" }, { status: 403 });
@@ -8,6 +9,9 @@ export async function POST(request: Request) {
   if (!viewer.userId)
     return Response.json({ error: "Sign in first" }, { status: 401 });
   const body = await request.json().catch(() => null);
+  const scope = request.headers.get("X-SKG-Account");
+  if (scope && scope !== accountKey(viewer.userId))
+    return Response.json({ error: "Account changed" }, { status: 409 });
   if (!validAnonymousId(body?.anonymousId))
     return Response.json(
       { error: "Invalid anonymous identifier" },

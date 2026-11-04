@@ -157,10 +157,15 @@ export function isDailyAlibiComplete(date = getGameDate()) {
 
 export function getAnonymousId() {
   const key = "skg-anonymous-id";
-  let id = localStorage.getItem(key);
+  let id: string | null = null;
+  try {
+    id = localStorage.getItem(key);
+  } catch {}
   if (!id) {
     id = crypto.randomUUID();
-    localStorage.setItem(key, id);
+    try {
+      localStorage.setItem(key, id);
+    } catch {}
   }
   return id;
 }

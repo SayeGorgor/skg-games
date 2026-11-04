@@ -92,7 +92,13 @@ async function main() {
       const original = await snapshot();
       assert.equal(original.locked, 4);
       assert.equal(original.inline, suspect.explanation);
-      assert.equal(posts, 1);
+      assert.equal(posts, 0);
+      const history = await page.evaluate(
+        () => JSON.parse(localStorage.getItem("skg-results-v1")!).entries,
+      );
+      assert.equal(history.length, 1);
+      assert.equal(history[0].value.solved, suspect.correct);
+      assert.deepEqual(history[0].value.result, { suspect: suspect.key });
       const saved = await page.evaluate(
         (key) => localStorage.getItem(key),
         storageKey,
@@ -123,7 +129,7 @@ async function main() {
       assert(completed.includes(suspect.correct ? "1 / 2" : "0 / 2"));
       await page.locator('a.game-card[href="/games/alibi"]').click();
       assert.deepEqual(await snapshot(), original);
-      assert.equal(posts, 1);
+      assert.equal(posts, 0);
       await page.reload({ waitUntil: "networkidle" });
       assert.deepEqual(await snapshot(), original);
       assert.equal(
@@ -165,7 +171,7 @@ async function main() {
       await reopened.close();
       assert.equal(
         posts,
-        1,
+        0,
         "Navigation, refresh and reopen must not submit again",
       );
       assert.equal(
@@ -184,7 +190,7 @@ async function main() {
       console.log(
         "PASS",
         suspect.correct ? "correct" : "incorrect",
-        "accusation: Home/Stack return, refresh/reopen, identical final state, no unlocked flash, no duplicate POST or progress writes",
+        "accusation: Home/Stack return, refresh/reopen, identical final state, no unlocked flash, no anonymous POST or duplicate results/progress writes",
       );
       const unknown = {
         ...stored,
@@ -231,7 +237,7 @@ async function main() {
         );
         assert.equal(await page.getByRole("dialog").count(), 0);
       }
-      assert.equal(posts, 1);
+      assert.equal(posts, 0);
       assert.deepEqual(errors, []);
       console.log(
         "PASS stale/unknown/legacy/previous-date entries stay playable",

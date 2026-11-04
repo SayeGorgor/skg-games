@@ -206,9 +206,16 @@ async function main() {
     await drag(cell(r, c), r + dr, c + dc, true);
     assert.equal(await page.locator(".piece-card.placed").count(), 1);
     await page.getByRole("button", { name: "Reset", exact: true }).click();
-    const completionResponse = page.waitForResponse(
-      (response) => response.url().endsWith("/api/games/complete"),
-      { timeout: 45000 },
+    const completionResponse = page.waitForFunction(
+      (difficulty) =>
+        JSON.parse(
+          localStorage.getItem("skg-results-v1") ?? "{}",
+        ).entries?.some(
+          (e: { value: { mode: string; difficulty: string } }) =>
+            e.value.mode === "practice" && e.value.difficulty === difficulty,
+        ),
+      p.difficulty,
+      { timeout: 120000 },
     );
     const unsolvedBoardSize = await page.locator(".stack-grid").boundingBox();
     for (const placement of generated.canonicalSolution) {
@@ -235,7 +242,7 @@ async function main() {
         Math.abs(unsolvedBoardSize.height - solvedBoardSize.height) < 1,
       "Remaining pieces and completion must not resize the board",
     );
-    assert.equal((await completionResponse).status(), 200);
+    await completionResponse;
     const time = await page
       .locator(".stat-row > div")
       .first()
@@ -350,9 +357,10 @@ async function main() {
   await page.goto(base + "/games/perfect-stack?difficulty=small", {
     waitUntil: "networkidle",
   });
-  const dailyCompletionResponse = page.waitForResponse(
-    (response) => response.url().endsWith("/api/games/complete"),
-    { timeout: 45000 },
+  const dailyCompletionResponse = page.waitForFunction(() =>
+    JSON.parse(localStorage.getItem("skg-results-v1") ?? "{}").entries?.some(
+      (e: { value: { mode: string } }) => e.value.mode === "daily",
+    ),
   );
   for (const placement of daily.canonicalSolution) {
     const piece = daily.publicPuzzle.pieces.find(
@@ -372,7 +380,7 @@ async function main() {
     );
   }
   await page.locator(".stack-victory-dialog[open]").waitFor();
-  assert.equal((await dailyCompletionResponse).status(), 200);
+  await dailyCompletionResponse;
   assert(
     (await page.locator(".stack-victory-dialog").innerText()).includes(
       "Small",
@@ -533,9 +541,17 @@ async function main() {
     "Practice API validation, native touch tray scrolling, tap rotation, grip drag after scrolling and tray edge scrolling: passed",
   );
   assert.deepEqual(errors, []);
+  assert.equal(
+    completionStatuses.length,
+    0,
+    "Guests queue locally without authenticated writes",
+  );
   assert(
-    completionStatuses.length >= 4,
-    "Daily and Practice must reach completion API",
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("skg-results-v1")!).entries.length >= 4,
+    ),
+    "Daily and Practice completions must be retained in history",
   );
   assert(
     completionStatuses.every((status) => status === 200),

@@ -17,11 +17,11 @@ import {
   clearStackHandoff,
 } from "@/lib/auth/game-handoff";
 import { SiteHeader } from "@/components/site-header";
+import { newResult, queueResult } from "@/lib/results/local";
 import { StackHowToPlay } from "@/components/games/stack-how-to-play";
 import { StackVictory } from "@/components/games/stack-victory";
 import "./perfect-stack-layout.css";
 import {
-  getAnonymousId,
   markStackDailySolved,
   getStackDailyProgress,
   getRestoredDailyStackState,
@@ -480,32 +480,22 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
           puzzle,
         ),
       );
-    try {
-      await fetch("/api/games/complete", {
-        method: "POST",
-        keepalive: true,
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          gameSlug: "perfect-stack",
-          mode: puzzle.mode,
-          difficulty: puzzle.difficulty,
-          challengeNumber: puzzle.challengeNumber,
-          puzzleSeed: puzzle.seed,
-          solved: true,
-          durationMs: seconds * 1000,
-          moves: finalMoves,
-          anonymousId: getAnonymousId(),
-          result: {
-            stars,
-            extraMoves: Math.max(0, finalMoves - puzzle.pieceCount),
-            placements: next,
-          },
-        }),
-      });
-    } catch {
-      /* Local result remains available offline. */
-    }
+    queueResult(
+      newResult({
+        gameSlug: "perfect-stack",
+        mode: puzzle.mode,
+        difficulty: puzzle.difficulty,
+        challengeDate: puzzle.challengeDate,
+        challengeNumber: puzzle.challengeNumber,
+        puzzleSeed: puzzle.seed,
+        solved: true,
+        durationMs: seconds * 1000,
+        moves: finalMoves,
+        result: { placements: next, stars },
+      }),
+    );
   }
+
   function check() {
     if (isStackSolved(puzzle, placements)) void complete(placements, moves);
     else

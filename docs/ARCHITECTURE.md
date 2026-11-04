@@ -49,6 +49,10 @@ The script also checks authenticated client controls using a mocked viewer respo
 
 ## Application boundaries
 
+- Completed game history, durable browser queues, account synchronization, and
+  `/stats` are described in [Game statistics](GAME-STATISTICS.md). They extend
+  `game_attempts` and the existing viewer/claim boundaries.
+
 - Game moves stay client-side; do not write every interaction to Postgres.
 - The server is authoritative for published challenge data, final solution validation, subscription entitlement, and cross-device stats.
 - Anonymous play is first-class. A generated anonymous UUID can later be claimed by an authenticated user.

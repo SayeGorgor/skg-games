@@ -156,6 +156,10 @@ export const gameAttempts = pgTable(
       onDelete: "set null",
     }),
     gameSlug: text("game_slug").notNull(),
+    clientEventId: uuid("client_event_id"),
+    resultKey: text("result_key"),
+    challengeDate: date("challenge_date"),
+    verified: boolean("verified").notNull().default(false),
     challengeNumber: integer("challenge_number"),
     mode: attemptMode("mode").notNull().default("daily"),
     variant: text("variant"),
@@ -177,6 +181,10 @@ export const gameAttempts = pgTable(
     index("attempt_user_idx").on(t.userId),
     index("attempt_anon_idx").on(t.anonymousId),
     index("attempt_game_idx").on(t.gameSlug, t.challengeNumber),
+    uniqueIndex("attempt_event_uq").on(t.clientEventId),
+    uniqueIndex("attempt_user_result_uq").on(t.userId, t.resultKey),
+    uniqueIndex("attempt_anon_result_uq").on(t.anonymousId, t.resultKey),
+    index("attempt_user_history_idx").on(t.userId, t.completedAt, t.id),
   ],
 );
 

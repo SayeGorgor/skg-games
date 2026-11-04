@@ -11,6 +11,8 @@
 ## Player state
 
 - `game_attempts`: immutable-ish completion/attempt event records.
+- History adds stable event IDs, daily result keys, puzzle dates, and validation
+  flags to this table. See [migration and statistics details](GAME-STATISTICS.md).
 - `user_game_stats`: aggregate streak and solve counters for fast profile reads.
 - `user_profiles`: SKG-owned profile/preferences keyed by the managed auth user id.
 - `anonymous_claims`: records ownership when local anonymous progress is merged into an account.

@@ -25,6 +25,9 @@ export default async function AccountPage() {
             </Link>
           )}
           <p>Your free games remain available every day.</p>
+          <Link className="button secondary" href="/stats">
+            View your stats and history
+          </Link>
         </div>
       </section>
     </main>

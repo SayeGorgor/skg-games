@@ -11,36 +11,18 @@ import {
 } from "react";
 import { AdSlot } from "@/components/ad-slot";
 import { SiteHeader } from "@/components/site-header";
+import { newResult, queueResult } from "@/lib/results/local";
 import { AlibiHowToPlay } from "./alibi-how-to-play";
 import { AlibiRunStats, AlibiYourRun } from "./alibi-your-run";
 import {
-  getAnonymousId,
   getRestoredDailyAlibiState,
   saveDailyAlibiResult,
 } from "@/lib/client-progress";
 import {
   fingerprintAlibiCase,
-  type AlibiCase,
   type AlibiSuspect,
   type DailyAlibiCase,
 } from "@/lib/games/alibi";
-
-async function persist(caseData: AlibiCase, solved: boolean, suspect: string) {
-  try {
-    await fetch("/api/games/complete", {
-      method: "POST",
-      keepalive: true,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        gameSlug: "daily-alibi",
-        challengeNumber: caseData.challengeNumber,
-        solved,
-        anonymousId: getAnonymousId(),
-        result: { suspect },
-      }),
-    });
-  } catch {}
-}
 
 const subscribeToHydration = () => () => {};
 const clientReady = () => true;
@@ -126,9 +108,21 @@ function AlibiSession({ caseData }: { caseData: DailyAlibiCase }) {
     const suspect = caseData.suspects.find((s) => s.key === selected);
     if (!suspect) return;
     submittedRef.current = true;
-    saveDailyAlibiResult(caseData, suspect.key);
+    const saved = saveDailyAlibiResult(caseData, suspect.key);
+    queueResult({
+      ...newResult({
+        gameSlug: "daily-alibi",
+        mode: "daily",
+        challengeDate: caseData.challengeDate,
+        challengeNumber: caseData.challengeNumber,
+        solved: suspect.correct,
+        moves: null,
+        durationMs: null,
+        result: { suspect: suspect.key },
+      }),
+      ...(saved ? { completedAt: saved.completedAt } : {}),
+    });
     setResult(outcomeFor(suspect));
-    void persist(caseData, suspect.correct, suspect.key);
   }
 
   return (

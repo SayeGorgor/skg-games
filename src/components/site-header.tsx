@@ -56,7 +56,7 @@ export function Brand({ className = "" }: { className?: string }) {
 }
 
 export function SiteHeader({ compact = false }: { compact?: boolean }) {
-  const { viewer, adsEnabled } = useViewer();
+  const { viewer, adsEnabled, streak } = useViewer();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -125,7 +125,7 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
               >
                 <Link href="/">Games</Link>
                 <Link href="/#archive">Archive</Link>
-                <Link href="/#stats">Stats</Link>
+                <Link href="/stats">Stats</Link>
                 <div className="header-menu-mobile-actions">
                   {adsEnabled && !viewer.premium && (
                     <Link href="/plus/start">Subscribe</Link>
@@ -158,12 +158,12 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
                 fill="var(--gold)"
               />
             </svg>
-            <span className="sr-only">12 day streak</span>
+            <span className="sr-only">{streak} day streak</span>
             <span className="streak-full" aria-hidden="true">
-              12 DAY STREAK
+              {streak} DAY STREAK
             </span>
             <span className="streak-short" aria-hidden="true">
-              12 days
+              {streak} days
             </span>
           </span>
           <div className="header-actions">

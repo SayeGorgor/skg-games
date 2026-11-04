@@ -152,14 +152,15 @@ async function main() {
       await place(small, smallSolution.placements[0], rotations);
       await undo().click();
     }
-    const smallPosted = page.waitForResponse(
-      (response) => response.url().endsWith("/api/games/complete"),
-      { timeout: 45000 },
+    const smallPosted = page.waitForFunction(
+      () =>
+        JSON.parse(localStorage.getItem("skg-results-v1") ?? "{}").entries
+          ?.length === 1,
     );
     for (const placement of smallSolution.placements)
       await place(small, placement, rotations);
     const smallSnapshot = await snapshot();
-    assert.equal((await smallPosted).status(), 200);
+    await smallPosted;
     assert.equal(smallSnapshot.stars, "2 out of 3 stars");
     await assertLocked();
     const storage = await page.evaluate(() =>
@@ -180,18 +181,19 @@ async function main() {
     assert.equal(await page.locator(".piece-card.placed").count(), 0);
     await switchTo("small");
     assert.deepEqual(await snapshot(), smallSnapshot);
-    assert.equal(submissions, 1);
+    assert.equal(submissions, 0);
     await assertLocked();
     await switchTo("medium");
     rotations.clear();
-    const mediumPosted = page.waitForResponse(
-      (response) => response.url().endsWith("/api/games/complete"),
-      { timeout: 45000 },
+    const mediumPosted = page.waitForFunction(
+      () =>
+        JSON.parse(localStorage.getItem("skg-results-v1") ?? "{}").entries
+          ?.length === 2,
     );
     for (const placement of mediumSolution.placements)
       await place(medium, placement, rotations);
     const mediumSnapshot = await snapshot();
-    assert.equal((await mediumPosted).status(), 200);
+    await mediumPosted;
     await switchTo("hard");
     assert(!(await reset().isDisabled()));
     assert.equal(await page.locator(".piece-card.placed").count(), 0);
@@ -230,8 +232,15 @@ async function main() {
     );
     assert.equal(
       submissions,
-      2,
+      0,
       "Revisits and reloads must not post completion again",
+    );
+    assert.equal(
+      await page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem("skg-results-v1")!).entries.length,
+      ),
+      2,
     );
     console.log(
       "PASS: independent Small/Medium solved snapshots, original moves/time/stars, refresh/reopen, no empty-board flash, no duplicate submissions",
@@ -281,7 +290,7 @@ async function main() {
     await page.locator(".stack-grid").waitFor();
     assert(!(await reset().isDisabled()));
     assert.equal(await page.locator(".piece-card.placed").count(), 0);
-    assert.equal(submissions, 2);
+    assert.equal(submissions, 0);
     assert.deepEqual(errors, []);
     console.log(
       "PASS: legacy/stale/corrupt results stay playable, previous date is isolated, Practice never restores Daily placements",

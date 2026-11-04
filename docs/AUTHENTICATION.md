@@ -110,7 +110,9 @@ Leaving either game for authentication also stores a temporary tab-local handoff
 Stack placements/rotations/moves/time or Alibi's unsubmitted selection. Returning
 to the same puzzle validates and consumes it; a finalized local result always
 takes precedence. Practice return links preserve difficulty and seed parameters.
-There is no cross-device restoration or stats recomputation in this task.
+Completed account history and derived statistics now support cross-device reads
+through [the game statistics system](GAME-STATISTICS.md). In-progress board
+restoration remains browser-local.
 If the DB is unavailable, completion remains locally usable and claim offers
 retry/continue. Another account's prior browser claim does not block signing in.
 

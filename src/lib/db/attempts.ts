@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { getDb } from "./index";
 import { dailyChallenges, gameAttempts, games } from "./schema";
 
@@ -14,6 +14,11 @@ export async function recordAttempt(input: {
   anonymousId: string | null;
   userId?: string | null;
   result: unknown;
+  clientEventId?: string;
+  resultKey?: string;
+  challengeDate?: string | null;
+  completedAt?: string | null;
+  verified?: boolean;
 }) {
   const db = getDb();
   if (!db) return false;
@@ -32,23 +37,53 @@ export async function recordAttempt(input: {
           .where(
             and(
               eq(dailyChallenges.gameId, game.id),
-              eq(dailyChallenges.challengeNumber, input.challengeNumber),
+              input.challengeDate
+                ? eq(dailyChallenges.challengeDate, input.challengeDate)
+                : eq(dailyChallenges.challengeNumber, input.challengeNumber),
             ),
           )
           .limit(1);
-  await db.insert(gameAttempts).values({
-    challengeId: challenge?.id,
-    gameSlug: input.gameSlug,
-    challengeNumber: input.challengeNumber,
-    mode: input.mode ?? "daily",
-    variant: input.variant,
-    puzzleSeed: input.puzzleSeed,
-    solved: input.solved,
-    moves: input.moves,
-    durationMs: input.durationMs,
-    anonymousId: input.anonymousId,
-    userId: input.userId ?? null,
-    result: input.result as Record<string, unknown>,
-  });
-  return true;
+  await db
+    .insert(gameAttempts)
+    .values({
+      challengeId: challenge?.id,
+      gameSlug: input.gameSlug,
+      challengeNumber: input.challengeNumber,
+      mode: input.mode ?? "daily",
+      variant: input.variant,
+      puzzleSeed: input.puzzleSeed,
+      solved: input.solved,
+      moves: input.moves,
+      durationMs: input.durationMs,
+      anonymousId: input.anonymousId,
+      userId: input.userId ?? null,
+      result: input.result as Record<string, unknown>,
+      clientEventId: input.clientEventId,
+      resultKey: input.resultKey,
+      challengeDate: input.challengeDate,
+      completedAt:
+        input.completedAt === undefined
+          ? new Date()
+          : input.completedAt === null
+            ? null
+            : new Date(input.completedAt),
+      verified: input.verified ?? false,
+    })
+    .onConflictDoNothing();
+  if (!input.clientEventId || !input.userId || !input.resultKey) return true;
+  // A duplicate is acknowledged only when this account owns the stored result.
+  const [owned] = await db
+    .select({ id: gameAttempts.id })
+    .from(gameAttempts)
+    .where(
+      and(
+        eq(gameAttempts.userId, input.userId),
+        or(
+          eq(gameAttempts.clientEventId, input.clientEventId),
+          eq(gameAttempts.resultKey, input.resultKey),
+        ),
+      ),
+    )
+    .limit(1);
+  return Boolean(owned);
 }
