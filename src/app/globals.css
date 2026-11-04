@@ -191,7 +191,7 @@ body {
   margin: 0;
   background: var(--bg-page);
   color: var(--text);
-  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+  font-family: "Satoshi Medium", system-ui, sans-serif;
   overflow-wrap: break-word;
 }
 button,
@@ -1932,6 +1932,7 @@ body:has(.stack-help-dialog[open]) {
   background: var(--alibi-page);
   color: var(--alibi-text);
   color-scheme: var(--alibi-color-scheme);
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
 }
 .alibi-shell :is(button, a):focus-visible {
   outline: 3px solid var(--alibi-focus);
@@ -2059,6 +2060,16 @@ body:has(.stack-help-dialog[open]) {
 }
 .alibi-case-heading {
   min-width: 0;
+}
+.alibi-case-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.alibi-case-date {
+  color: var(--text);
+  font-size: 13px;
 }
 @media (min-width: 1024px) {
   .alibi-hero-layout {

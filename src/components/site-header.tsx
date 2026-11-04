@@ -6,9 +6,9 @@ import { AccountControls } from "./auth/account-controls";
 import { useViewer } from "./auth/viewer-provider";
 
 export function Brand({ className = "" }: { className?: string }) {
-  // Satoshi's visible GAMES outlines span 0.75em, with a 1/64em
-  // overshoot below the baseline. Match SKG and the mark at y=6…31.
-  const gamesFontSize = 25 / 0.75;
+  // At 32px, Satoshi Medium renders 24px above and 1px below its baseline.
+  // A baseline of 30 aligns its visible edges with SKG at y=6…31.
+  const gamesFontSize = 32;
   return (
     <Link className={`brand ${className}`} href="/" aria-label="SKG Games home">
       <svg
@@ -41,10 +41,10 @@ export function Brand({ className = "" }: { className?: string }) {
         <text
           // Position each letter by its visible edges, matching SKG's tight gaps.
           x="110 137 159 187.5 208.5"
-          y={31 - gamesFontSize / 64 + 0.13}
-          fontFamily='"Satoshi Regular", Arial, sans-serif'
+          y="30"
+          fontFamily='"Satoshi Medium", Arial, sans-serif'
           fontSize={gamesFontSize}
-          fontWeight="500"
+          fontWeight="600"
           style={{ fontKerning: "none" }}
           fill="currentColor"
         >

@@ -130,17 +130,19 @@ function AlibiSession({ caseData }: { caseData: DailyAlibiCase }) {
       <SiteHeader />
       <section className="alibi-hero alibi-hero-layout container">
         <div className="alibi-case-heading">
-          <span className="case-pill">
-            CASE #{caseData.challengeNumber} &bull;{" "}
-            {new Date(caseData.challengeDate + "T12:00:00Z")
-              .toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
-                timeZone: "UTC",
-              })
-              .toUpperCase()}
-          </span>
+          <div className="alibi-case-meta">
+            <span className="case-pill">CASE #{caseData.challengeNumber}</span>
+            <time className="alibi-case-date" dateTime={caseData.challengeDate}>
+              {new Date(caseData.challengeDate + "T12:00:00Z")
+                .toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                  timeZone: "UTC",
+                })
+                .toUpperCase()}
+            </time>
+          </div>
           <div className="alibi-title-row">
             <h1>Daily Alibi</h1>
             <div className="alibi-heading-actions">
