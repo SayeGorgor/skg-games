@@ -115,3 +115,7 @@ Existing local accusation snapshots and their browser-safe fingerprint remain un
 For production, first confirm the target Neon environment, review and back up according to the deployment process, run the additive migration deliberately, inspect `--dry-run` and `--status`, then run the real seed. Never run a migration or a real seed merely because a production URL exists in `.env.local`. No production cron is deployed by these commands. The reusable planner/store/service in `daily-alibi/` can support an authorized scheduler later.
 
 Tests include an isolated PostgreSQL engine (PGlite, development dependency) which applies all migrations, writes actual seed SQL, checks idempotency and constraints, retrieves today's case, denies tomorrow, and compares Perfect Stack rows before and after. Unit tests cover catalog structure, deterministic fingerprints, DST, exhaustion, dry runs, immutable saved outcomes for all 30 cases and seeded accusation verification. Run `npm test`, `npm run lint`, and `npm run build`. The existing `test:alibi-persistence` and `test:alibi-theme` browser scripts use the legacy development fixture; run a separate development server with the explicit fixture flag and point `STACK_TEST_URL` to it.
+
+## Daily Perfect Stack Account Sync
+
+Daily Perfect Stack now restores account-owned final boards across devices through the existing completion store. See [Perfect Stack account synchronization](docs/PERFECT-STACK-ACCOUNT-SYNC.md) for reconciliation, legacy backfill, account-scoped caches and verification.

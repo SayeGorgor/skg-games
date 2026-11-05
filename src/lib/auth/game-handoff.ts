@@ -13,16 +13,23 @@ export type StackHandoff = {
   seconds: number;
   selected: string;
 };
-const keyFor = (p: StackPuzzle) =>
-  `skg-auth-board:${p.mode}:${p.challengeDate}:${p.difficulty}:${p.seed}`;
-export function saveStackHandoff(puzzle: StackPuzzle, state: StackHandoff) {
+const keyFor = (p: StackPuzzle, scope?: string | null) =>
+  `skg-auth-board:${p.mode}:${p.challengeDate}:${p.difficulty}:${p.seed}${scope ? `:account:${scope}` : ""}`;
+export function saveStackHandoff(
+  puzzle: StackPuzzle,
+  state: StackHandoff,
+  scope?: string | null,
+) {
   try {
-    sessionStorage.setItem(keyFor(puzzle), JSON.stringify(state));
+    sessionStorage.setItem(keyFor(puzzle, scope), JSON.stringify(state));
   } catch {}
 }
-export function readStackHandoff(puzzle: StackPuzzle): StackHandoff | null {
+export function readStackHandoff(
+  puzzle: StackPuzzle,
+  scope?: string | null,
+): StackHandoff | null {
   try {
-    const raw = sessionStorage.getItem(keyFor(puzzle));
+    const raw = sessionStorage.getItem(keyFor(puzzle, scope));
     if (!raw) return null;
     const saved = JSON.parse(raw) as StackHandoff;
     if (
@@ -77,8 +84,8 @@ export function readStackHandoff(puzzle: StackPuzzle): StackHandoff | null {
     return null;
   }
 }
-export function clearStackHandoff(puzzle: StackPuzzle) {
+export function clearStackHandoff(puzzle: StackPuzzle, scope?: string | null) {
   try {
-    sessionStorage.removeItem(keyFor(puzzle));
+    sessionStorage.removeItem(keyFor(puzzle, scope));
   } catch {}
 }

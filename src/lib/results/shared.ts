@@ -154,6 +154,16 @@ export function resultKey(
     ? `${r.gameSlug}:${r.challengeDate}:${r.difficulty ?? "default"}`
     : `practice:${r.eventId}`;
 }
+export function compareStackResults(
+  a: Pick<HistoryResult, "moves" | "completedAt" | "eventId">,
+  b: Pick<HistoryResult, "moves" | "completedAt" | "eventId">,
+) {
+  return (
+    (a.moves ?? Infinity) - (b.moves ?? Infinity) ||
+    (a.completedAt ?? "~").localeCompare(b.completedAt ?? "~") ||
+    a.eventId.localeCompare(b.eventId)
+  );
+}
 export function uniqueHistory(rows: HistoryResult[]) {
   const daily = new Map<string, HistoryResult>();
   for (const r of rows) {
@@ -168,8 +178,7 @@ export function uniqueHistory(rows: HistoryResult[]) {
     // Preserve the first finalized accusation, and the best existing Stack run.
     if (
       !old ||
-      (r.gameSlug === "perfect-stack" &&
-        (r.moves ?? Infinity) < (old.moves ?? Infinity)) ||
+      (r.gameSlug === "perfect-stack" && compareStackResults(r, old) < 0) ||
       (r.gameSlug === "daily-alibi" &&
         (r.completedAt ?? "~") < (old.completedAt ?? "~"))
     )

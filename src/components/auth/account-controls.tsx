@@ -43,8 +43,11 @@ export function AccountControls({
     >
       {viewer.authenticated ? (
         <>
-          {variant === "account" && (
-            <Link className="header-plus" href="/account">
+          {variant !== "sign-out" && (
+            <Link
+              className={variant === "menu-auth" ? undefined : "header-plus"}
+              href="/account"
+            >
               {adsEnabled && viewer.premium ? "Account · Plus" : "Account"}
             </Link>
           )}

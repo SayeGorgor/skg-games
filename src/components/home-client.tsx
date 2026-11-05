@@ -62,7 +62,7 @@ export function HomeClient() {
   const [today, setToday] = useState("");
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      const p = getLocalProgress();
+      const p = getLocalProgress(viewer.authenticated ? viewer.accountKey : null);
       setToday(
         new Date(getGameDate() + "T12:00:00Z")
           .toLocaleDateString("en-US", {
@@ -75,7 +75,7 @@ export function HomeClient() {
       setDone(Number(p.alibiSolved) + Number(p.stackSolved));
     });
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [viewer.authenticated, viewer.accountKey]);
 
   return (
     <main className="site-shell">

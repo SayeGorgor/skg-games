@@ -129,19 +129,22 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
                 <Link href="/">Games</Link>
                 <Link href="/#archive">Archive</Link>
                 <Link href="/stats">Stats</Link>
-                <div className="header-menu-mobile-actions">
+                <div className="header-menu-auth-actions">
+                  {viewer.authenticated ? (
+                    <>
+                      <AccountControls variant="menu-auth" />
+                      <AccountControls variant="sign-out" />
+                    </>
+                  ) : (
+                    <>
+                      <AccountControls mode="sign-in" variant="menu-auth" />
+                      <AccountControls mode="sign-up" variant="menu-auth" />
+                    </>
+                  )}
                   {adsEnabled && !viewer.premium && (
                     <Link href="/plus/start">Subscribe</Link>
                   )}
-                  {viewer.authenticated && <AccountControls />}
                 </div>
-                {!viewer.authenticated && (
-                  <div className="header-menu-auth-actions">
-                    <AccountControls mode="sign-in" variant="menu-auth" />
-                    <AccountControls mode="sign-up" variant="menu-auth" />
-                  </div>
-                )}
-                <AccountControls variant="sign-out" />
               </nav>
             </div>
             <Brand />

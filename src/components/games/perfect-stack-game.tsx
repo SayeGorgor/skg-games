@@ -17,7 +17,14 @@ import {
   clearStackHandoff,
 } from "@/lib/auth/game-handoff";
 import { SiteHeader } from "@/components/site-header";
-import { newResult, queueResult } from "@/lib/results/local";
+import { useViewer } from "@/components/auth/viewer-provider";
+import { useStackAccountProgress } from "./use-stack-account-progress";
+import {
+  matchesAccountCompletion,
+  stackCompletionIdentity,
+  type AccountStackProgress,
+} from "@/lib/games/perfect-stack/completion";
+import { newResult, queueResult, setResultActor } from "@/lib/results/local";
 import { getGameDate } from "@/lib/game-date";
 import { StackHowToPlay } from "@/components/games/stack-how-to-play";
 import { StackVictory } from "@/components/games/stack-victory";
@@ -69,6 +76,18 @@ const subscribeToHydration = () => () => {};
 const clientReady = () => true;
 const serverReady = () => false;
 export function PerfectStackGame({ puzzle }: { puzzle: StackPuzzle }) {
+  const { viewer } = useViewer();
+  const accountScope =
+    viewer.authenticated && puzzle.mode === "daily" ? viewer.accountKey : null;
+  const account = useStackAccountProgress(
+    accountScope,
+    puzzle.mode === "daily" ? puzzle.challengeDate : null,
+  );
+  const [freshCompletion, setFreshCompletion] = useState<{
+    scope: string | null | undefined;
+    seed: string;
+    identity: string;
+  } | null>(null);
   // Local storage cannot be read during SSR. Mount the keyed session only once
   // client storage is available, so a restored board's first render is solved.
   const ready = useSyncExternalStore(
@@ -76,39 +95,112 @@ export function PerfectStackGame({ puzzle }: { puzzle: StackPuzzle }) {
     clientReady,
     serverReady,
   );
-  if (!ready)
+  const completion = account.state?.data?.difficulties[puzzle.difficulty];
+  const preserveFreshSession =
+    completion &&
+    freshCompletion &&
+    freshCompletion.scope === accountScope &&
+    freshCompletion.seed === puzzle.seed &&
+    freshCompletion.identity === stackCompletionIdentity(completion);
+  const waiting =
+    viewer.authenticated &&
+    puzzle.mode === "daily" &&
+    (!accountScope || !account.state?.data);
+  const failed =
+    viewer.authenticated &&
+    puzzle.mode === "daily" &&
+    account.state?.error &&
+    !matchesAccountCompletion(puzzle, completion);
+  if (!ready || waiting || failed)
     return (
       <main className="site-shell">
         <SiteHeader />
         <section className="stack-page container" aria-busy="true">
           <h1>Perfect Stack</h1>
-          <p role="status">Loading your board...</p>
+          <p role="status">{account.state?.error ?? "Loading your board..."}</p>
+          {account.state?.error && (
+            <button className="button secondary" onClick={account.retry}>
+              Retry saved board
+            </button>
+          )}
         </section>
       </main>
     );
   return (
     <PerfectStackSession
-      key={`${puzzle.mode}:${puzzle.challengeDate}:${puzzle.difficulty}:${puzzle.seed}`}
+      key={`${accountScope ?? "guest"}:${puzzle.mode}:${puzzle.challengeDate}:${puzzle.difficulty}:${puzzle.seed}:${completion && !preserveFreshSession ? stackCompletionIdentity(completion) : "open"}`}
       puzzle={puzzle}
+      accountScope={accountScope}
+      accountProgress={account.state?.data}
+      syncError={account.state?.error}
+      onRetry={account.retry}
+      onCompleted={(result) =>
+        setFreshCompletion({
+          scope: accountScope,
+          seed: puzzle.seed,
+          identity: stackCompletionIdentity(result),
+        })
+      }
     />
   );
 }
 
-function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
+function PerfectStackSession({
+  puzzle,
+  accountScope,
+  accountProgress,
+  onCompleted,
+  syncError,
+  onRetry,
+}: {
+  puzzle: StackPuzzle;
+  accountScope?: string | null;
+  accountProgress?: AccountStackProgress;
+  onCompleted: (result: {
+    moves: number;
+    durationMs: number;
+    stars: 1 | 2 | 3;
+    placements: Placement[];
+  }) => void;
+  syncError?: string;
+  onRetry: () => void;
+}) {
   const [initial] = useState(() => {
-    const progress = getStackDailyProgress(puzzle.challengeDate ?? undefined);
+    const progress = getStackDailyProgress(
+      puzzle.challengeDate ?? undefined,
+      accountScope,
+    );
+    if (accountProgress)
+      for (const difficulty of ["small", "medium", "hard"] as const) {
+        const result = accountProgress.difficulties[difficulty];
+        if (!result) continue;
+        progress.difficulties[difficulty] = {
+          solved: true,
+          stars: result.stars ?? 1,
+          moves: result.moves ?? 0,
+          durationMs: result.durationMs ?? 0,
+          puzzleSeed: result.puzzleSeed,
+          ...(result.placements ? { placements: result.placements } : {}),
+          ...(result.completedAt ? { completedAt: result.completedAt } : {}),
+        };
+      }
     const restored = getRestoredDailyStackState(puzzle, progress);
-    if (puzzle.mode === "daily" && !restored) {
+    const remote = accountProgress?.difficulties[puzzle.difficulty];
+    const legacy = Boolean(remote && !matchesAccountCompletion(puzzle, remote));
+    if (puzzle.mode === "daily" && !restored && !legacy) {
       // Keep historical metadata in storage, but don't present a legacy/stale
       // record as a locked completion for the active puzzle.
       delete progress.difficulties[puzzle.difficulty];
     }
-    const handoff = restored ? null : readStackHandoff(puzzle);
-    return { progress, restored, handoff };
+    const handoff =
+      restored || legacy ? null : readStackHandoff(puzzle, accountScope);
+    return { progress, restored, handoff, legacy, remote };
   });
-  const [solved, setSolved] = useState(initial.restored !== null);
+  const [solved, setSolved] = useState(
+    initial.restored !== null || initial.legacy,
+  );
   const [progress, setProgress] = useState(initial.progress);
-  const completedRef = useRef(initial.restored !== null);
+  const completedRef = useRef(initial.restored !== null || initial.legacy);
   const [selected, setSelected] = useState(
     initial.restored ? "" : (initial.handoff?.selected ?? puzzle.pieces[0].id),
   );
@@ -142,6 +234,38 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
   const primaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // The account lookup confirmed no result, but this account has a valid
+    // local final board (for example a previously failed upload). Reuse the
+    // normal idempotent queue, preserving the original completion timestamp.
+    if (
+      !accountScope ||
+      puzzle.mode !== "daily" ||
+      initial.remote ||
+      !initial.restored
+    )
+      return;
+    setResultActor(accountScope);
+    queueResult({
+      ...newResult({
+        gameSlug: "perfect-stack",
+        mode: "daily",
+        difficulty: puzzle.difficulty,
+        challengeDate: puzzle.challengeDate,
+        challengeNumber: puzzle.challengeNumber,
+        puzzleSeed: puzzle.seed,
+        solved: true,
+        moves: initial.restored.moves,
+        durationMs: initial.restored.durationMs,
+        result: {
+          placements: initial.restored.placements,
+          stars: initial.restored.stars,
+        },
+      }),
+      completedAt: initial.restored.completedAt ?? null,
+    });
+  }, [accountScope, puzzle, initial]);
+
+  useEffect(() => {
     const primary = primaryRef.current;
     const header = primary?.querySelector(".site-header");
     if (!primary || !header) return;
@@ -159,19 +283,23 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
   const started = useRef(false);
   const saveForAuth = useEffectEvent(() => {
     if (!solved)
-      saveStackHandoff(puzzle, {
-        placements,
-        rotations,
-        moves,
-        seconds,
-        selected,
-      });
+      saveStackHandoff(
+        puzzle,
+        {
+          placements,
+          rotations,
+          moves,
+          seconds,
+          selected,
+        },
+        accountScope,
+      );
   });
   useEffect(() => {
-    clearStackHandoff(puzzle);
+    clearStackHandoff(puzzle, accountScope);
     window.addEventListener("skg-auth-leaving", saveForAuth);
     return () => window.removeEventListener("skg-auth-leaving", saveForAuth);
-  }, [puzzle]);
+  }, [puzzle, accountScope]);
 
   useEffect(() => {
     if (solved) return;
@@ -453,6 +581,12 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
     setSolved(true);
     setMessage("Perfect stack · every square is filled.");
     const stars = getStackStars(finalMoves, puzzle.pieceCount);
+    onCompleted({
+      moves: finalMoves,
+      durationMs: seconds * 1000,
+      stars,
+      placements: next,
+    });
     if (puzzle.mode === "daily" && puzzle.challengeDate)
       setProgress(
         markStackDailySolved(
@@ -465,8 +599,10 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
             durationMs: seconds * 1000,
             puzzleSeed: puzzle.seed,
             placements: next,
+            completedAt: new Date().toISOString(),
           },
           puzzle,
+          accountScope,
         ),
       );
     queueResult(
@@ -502,6 +638,14 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
         <SiteHeader />
         <section className="stack-page container">
           <div className="stack-heading">
+            {syncError && (
+              <p role="status">
+                Showing your cached completed board. {syncError}{" "}
+                <button className="button secondary" onClick={onRetry}>
+                  Retry saved board
+                </button>
+              </p>
+            )}
             <div className="stack-intro">
               <div>
                 <span className="stack-puzzle-pill">
@@ -531,7 +675,7 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
               </div>
               <p className="lede">Use every piece. Fill every square.</p>
             </div>
-            {solved && (
+            {solved && !initial.legacy && (
               <StackVictory
                 puzzle={puzzle}
                 placements={placements}
@@ -539,6 +683,7 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
                 seconds={seconds}
                 progress={progress}
                 stars={initial.restored?.stars}
+                autoOpen={!initial.remote}
               />
             )}
             <div className="stack-options-panel">
@@ -557,14 +702,18 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
                 {(Object.keys(STACK_DIFFICULTIES) as StackDifficulty[]).map(
                   (d) => {
                     const config = STACK_DIFFICULTIES[d];
-                    const result = progress?.difficulties[d];
+                    const result =
+                      accountProgress?.difficulties[d] ??
+                      progress?.difficulties[d];
                     const completed =
                       puzzle.mode === "daily"
                         ? Boolean(result)
                         : puzzle.difficulty === d && solved;
                     const stars = completed
                       ? puzzle.mode === "daily"
-                        ? result!.stars
+                        ? accountProgress?.difficulties[d]
+                          ? (accountProgress.difficulties[d]!.stars ?? 0)
+                          : (result?.stars ?? 0)
                         : getStackStars(moves, puzzle.pieceCount)
                       : 0;
                     return (
@@ -609,7 +758,7 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
                               )}
                             </span>
                           </span>
-                          {completed && (
+                          {completed && stars > 0 && (
                             <>
                               <span
                                 className="stack-difficulty-divider"
@@ -675,231 +824,269 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
               )}
             </div>
           </div>
-          <div
-            className="stack-layout"
-            id="perfect-stack-play"
-            role="region"
-            aria-label="Perfect Stack gameplay"
-            data-stack-solved={solved ? "true" : undefined}
-            tabIndex={-1}
-            style={
-              {
-                "--board-cols": puzzle.cols,
-                "--piece-max-cells": Math.max(
-                  ...puzzle.pieces.map((piece) => piece.cells.length),
-                ),
-              } as CSSProperties
-            }
-          >
-            <div className="stat-row">
-              <div>
-                <strong>{fmt}</strong>
-                <small>TIME</small>
-              </div>
-              <div>
-                <strong>{moves}</strong>
-                <small>MOVES</small>
-              </div>
-              <div>
-                <strong>{puzzle.pieceCount}</strong>
-                <small>OPTIMAL</small>
-              </div>
-            </div>
-
-            <section className="stack-board-card">
-              <div className="board-heading">
-                <div>
-                  <span className="eyebrow blue">
-                    {puzzle.mode === "daily"
-                      ? "TODAY'S BOARD"
-                      : "PRACTICE BOARD"}
-                  </span>
-                  <p>
-                    {puzzle.rows} &times; {puzzle.cols} &bull;{" "}
-                    {remaining.length} pieces left
-                  </p>
-                </div>
-                <span className="streak-pill">{moves} MOVES</span>
-              </div>
-              <div className="stack-board-viewport">
-                <div
-                  className="stack-grid"
-                  ref={boardRef}
-                  style={
-                    {
-                      "--board-rows": puzzle.rows,
-                      "--board-cols": puzzle.cols,
-                      gridTemplateColumns: `repeat(${puzzle.cols}, minmax(0, 1fr))`,
-                      gridTemplateRows: `repeat(${puzzle.rows}, minmax(0, 1fr))`,
-                    } as CSSProperties
-                  }
-                >
-                  {Array.from({ length: puzzle.rows * puzzle.cols }, (_, i) => {
-                    const cell: [number, number] = [
-                      Math.floor(i / puzzle.cols),
-                      i % puzzle.cols,
-                    ];
-                    const k = key(cell);
-
-                    const pid = placedMap.get(k);
-                    const piece = pid
-                      ? puzzle.pieces.find((p) => p.id === pid)
-                      : null;
-                    const previewed = dragPreview.has(k);
-                    return (
-                      <button
-                        key={k}
-                        aria-label={`Row ${cell[0] + 1}, column ${cell[1] + 1}`}
-                        data-stack-cell="true"
-                        data-row={cell[0]}
-                        data-col={cell[1]}
-                        data-stack-piece={pid}
-                        className={`stack-cell target ${piece?.color || ""} ${previewed ? "drag-preview" : ""} ${previewed && !drag?.valid ? "drag-invalid" : ""}`}
-                        style={
-                          previewed && draggingPiece
-                            ? ({
-                                "--drag-preview-color": `var(--${draggingPiece.color})`,
-                              } as CSSProperties)
-                            : undefined
-                        }
-                        onPointerDown={(event) => {
-                          if (pid) startDrag(event, pid);
-                          else if (!dragRef.current)
-                            suppressClickRef.current = false;
-                        }}
-                        onPointerMove={moveDrag}
-                        onPointerUp={(event) => endDrag(event)}
-                        onPointerCancel={(event) => endDrag(event, true)}
-                        onLostPointerCapture={(event) => endDrag(event, true)}
-                        onClick={(event) => {
-                          if (suppressClickRef.current && event.detail !== 0) {
-                            suppressClickRef.current = false;
-                            return;
-                          }
-                          suppressClickRef.current = false;
-                          if (solved) return;
-                          if (pid) {
-                            setSelected(pid);
-                            setPlacements((p) =>
-                              p.filter((x) => x.pieceId !== pid),
-                            );
-                            setMessage(
-                              "Piece picked up. Rotate it in the tray or place it again.",
-                            );
-                          } else if (selected) tryPlace(selected, cell);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-              <p className="board-message" role="status">
-                <i />
-                {boardMessage}
+          {initial.legacy ? (
+            <section
+              className="panel stack-legacy-completion"
+              aria-label="Completed Daily result"
+            >
+              <h2>Completed</h2>
+              <p>You solved this Daily challenge.</p>
+              <p>
+                {initial.remote?.stars
+                  ? "?".repeat(initial.remote.stars)
+                  : "Stars unavailable"}
+              </p>
+              <p>
+                {initial.remote?.moves ?? "N/A"} moves ?{" "}
+                {initial.remote?.durationMs === null
+                  ? "Time unavailable"
+                  : `${String(Math.floor((initial.remote?.durationMs ?? 0) / 60000)).padStart(2, "0")}:${String(Math.floor((initial.remote?.durationMs ?? 0) / 1000) % 60).padStart(2, "0")}`}
+              </p>
+              <p>
+                Your original board arrangement isn&apos;t available on this
+                device.
               </p>
             </section>
-            <aside className="stack-side">
-              <section className="piece-tray" aria-label="Pieces">
-                <span className="eyebrow">
-                  PIECES LEFT · {remaining.length}
-                </span>
-                <p className="stack-tray-hint">
-                  <span className="piece-tray-count">
+          ) : (
+            <div
+              className="stack-layout"
+              id="perfect-stack-play"
+              role="region"
+              aria-label="Perfect Stack gameplay"
+              data-stack-solved={solved ? "true" : undefined}
+              tabIndex={-1}
+              style={
+                {
+                  "--board-cols": puzzle.cols,
+                  "--piece-max-cells": Math.max(
+                    ...puzzle.pieces.map((piece) => piece.cells.length),
+                  ),
+                } as CSSProperties
+              }
+            >
+              <div className="stat-row">
+                <div>
+                  <strong>{fmt}</strong>
+                  <small>TIME</small>
+                </div>
+                <div>
+                  <strong>{moves}</strong>
+                  <small>MOVES</small>
+                </div>
+                <div>
+                  <strong>{puzzle.pieceCount}</strong>
+                  <small>OPTIMAL</small>
+                </div>
+              </div>
+
+              <section className="stack-board-card">
+                <div className="board-heading">
+                  <div>
+                    <span className="eyebrow blue">
+                      {puzzle.mode === "daily"
+                        ? "TODAY'S BOARD"
+                        : "PRACTICE BOARD"}
+                    </span>
+                    <p>
+                      {puzzle.rows} &times; {puzzle.cols} &bull;{" "}
+                      {remaining.length} pieces left
+                    </p>
+                  </div>
+                  <span className="streak-pill">{moves} MOVES</span>
+                </div>
+                <div className="stack-board-viewport">
+                  <div
+                    className="stack-grid"
+                    ref={boardRef}
+                    style={
+                      {
+                        "--board-rows": puzzle.rows,
+                        "--board-cols": puzzle.cols,
+                        gridTemplateColumns: `repeat(${puzzle.cols}, minmax(0, 1fr))`,
+                        gridTemplateRows: `repeat(${puzzle.rows}, minmax(0, 1fr))`,
+                      } as CSSProperties
+                    }
+                  >
+                    {Array.from(
+                      { length: puzzle.rows * puzzle.cols },
+                      (_, i) => {
+                        const cell: [number, number] = [
+                          Math.floor(i / puzzle.cols),
+                          i % puzzle.cols,
+                        ];
+                        const k = key(cell);
+
+                        const pid = placedMap.get(k);
+                        const piece = pid
+                          ? puzzle.pieces.find((p) => p.id === pid)
+                          : null;
+                        const previewed = dragPreview.has(k);
+                        return (
+                          <button
+                            key={k}
+                            aria-label={`Row ${cell[0] + 1}, column ${cell[1] + 1}`}
+                            data-stack-cell="true"
+                            data-row={cell[0]}
+                            data-col={cell[1]}
+                            data-stack-piece={pid}
+                            className={`stack-cell target ${piece?.color || ""} ${previewed ? "drag-preview" : ""} ${previewed && !drag?.valid ? "drag-invalid" : ""}`}
+                            style={
+                              previewed && draggingPiece
+                                ? ({
+                                    "--drag-preview-color": `var(--${draggingPiece.color})`,
+                                  } as CSSProperties)
+                                : undefined
+                            }
+                            onPointerDown={(event) => {
+                              if (pid) startDrag(event, pid);
+                              else if (!dragRef.current)
+                                suppressClickRef.current = false;
+                            }}
+                            onPointerMove={moveDrag}
+                            onPointerUp={(event) => endDrag(event)}
+                            onPointerCancel={(event) => endDrag(event, true)}
+                            onLostPointerCapture={(event) =>
+                              endDrag(event, true)
+                            }
+                            onClick={(event) => {
+                              if (
+                                suppressClickRef.current &&
+                                event.detail !== 0
+                              ) {
+                                suppressClickRef.current = false;
+                                return;
+                              }
+                              suppressClickRef.current = false;
+                              if (solved) return;
+                              if (pid) {
+                                setSelected(pid);
+                                setPlacements((p) =>
+                                  p.filter((x) => x.pieceId !== pid),
+                                );
+                                setMessage(
+                                  "Piece picked up. Rotate it in the tray or place it again.",
+                                );
+                              } else if (selected) tryPlace(selected, cell);
+                            }}
+                          />
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+                <p className="board-message" role="status">
+                  <i />
+                  {boardMessage}
+                </p>
+              </section>
+              <aside className="stack-side">
+                <section className="piece-tray" aria-label="Pieces">
+                  <span className="eyebrow">
                     PIECES LEFT · {remaining.length}
                   </span>
-                  <span>Swipe to scroll</span>
-                </p>
-                <div
-                  className="piece-grid"
-                  ref={pieceGridRef}
-                  tabIndex={0}
-                  role="region"
-                  aria-label="Scrollable puzzle pieces"
-                >
-                  {puzzle.pieces.map((piece) => {
-                    const placed = placements.some(
-                      (p) => p.pieceId === piece.id,
-                    );
-                    const cells = oriented(piece, rotations[piece.id] ?? 0);
-                    return (
-                      <button
-                        onPointerDown={(event) => {
-                          if (
-                            event.pointerType !== "touch" ||
-                            (event.target as Element).closest(
-                              ".piece-drag-handle",
+                  <p className="stack-tray-hint">
+                    <span className="piece-tray-count">
+                      PIECES LEFT · {remaining.length}
+                    </span>
+                    <span>Swipe to scroll</span>
+                  </p>
+                  <div
+                    className="piece-grid"
+                    ref={pieceGridRef}
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Scrollable puzzle pieces"
+                  >
+                    {puzzle.pieces.map((piece) => {
+                      const placed = placements.some(
+                        (p) => p.pieceId === piece.id,
+                      );
+                      const cells = oriented(piece, rotations[piece.id] ?? 0);
+                      return (
+                        <button
+                          onPointerDown={(event) => {
+                            if (
+                              event.pointerType !== "touch" ||
+                              (event.target as Element).closest(
+                                ".piece-drag-handle",
+                              )
                             )
-                          )
-                            startDrag(event, piece.id);
-                        }}
-                        onPointerMove={moveDrag}
-                        onPointerUp={(event) => endDrag(event)}
-                        onPointerCancel={(event) => endDrag(event, true)}
-                        onLostPointerCapture={(event) => endDrag(event, true)}
-                        onClick={(event) => {
-                          if (solved) return;
-                          if (suppressClickRef.current && event.detail !== 0) {
+                              startDrag(event, piece.id);
+                          }}
+                          onPointerMove={moveDrag}
+                          onPointerUp={(event) => endDrag(event)}
+                          onPointerCancel={(event) => endDrag(event, true)}
+                          onLostPointerCapture={(event) => endDrag(event, true)}
+                          onClick={(event) => {
+                            if (solved) return;
+                            if (
+                              suppressClickRef.current &&
+                              event.detail !== 0
+                            ) {
+                              suppressClickRef.current = false;
+                              return;
+                            }
                             suppressClickRef.current = false;
-                            return;
-                          }
-                          suppressClickRef.current = false;
-                          setSelected(piece.id);
-                          if (placed) {
-                            setPlacements((p) =>
-                              p.filter((x) => x.pieceId !== piece.id),
-                            );
-                            setMessage("Piece picked up. Tap again to rotate.");
-                          } else rotatePiece(piece.id);
-                        }}
-                        key={piece.id}
-                        disabled={solved}
-                        aria-pressed={selected === piece.id}
-                        aria-label={`${piece.id}: drag to place, or click to select and rotate`}
-                        className={`piece-card ${selected === piece.id && !placed ? "selected" : ""} ${placed ? "placed" : ""} ${drag?.active && drag.pieceId === piece.id ? "drag-source" : ""}`}
-                      >
-                        <span
-                          className="piece-drag-handle"
-                          aria-hidden="true"
-                          title="Drag piece"
+                            setSelected(piece.id);
+                            if (placed) {
+                              setPlacements((p) =>
+                                p.filter((x) => x.pieceId !== piece.id),
+                              );
+                              setMessage(
+                                "Piece picked up. Tap again to rotate.",
+                              );
+                            } else rotatePiece(piece.id);
+                          }}
+                          key={piece.id}
+                          disabled={solved}
+                          aria-pressed={selected === piece.id}
+                          aria-label={`${piece.id}: drag to place, or click to select and rotate`}
+                          className={`piece-card ${selected === piece.id && !placed ? "selected" : ""} ${placed ? "placed" : ""} ${drag?.active && drag.pieceId === piece.id ? "drag-source" : ""}`}
                         >
-                          ⠿
-                        </span>
-                        <span className="piece-viewport">
-                          <PieceShape piece={piece} cells={cells} />
-                        </span>
-                        <small>
-                          {placed
-                            ? "Placed"
-                            : piece.id === "green-o"
-                              ? "Square"
-                              : "Tap to rotate"}
-                        </small>
-                      </button>
-                    );
-                  })}
+                          <span
+                            className="piece-drag-handle"
+                            aria-hidden="true"
+                            title="Drag piece"
+                          >
+                            ⠿
+                          </span>
+                          <span className="piece-viewport">
+                            <PieceShape piece={piece} cells={cells} />
+                          </span>
+                          <small>
+                            {placed
+                              ? "Placed"
+                              : piece.id === "green-o"
+                                ? "Square"
+                                : "Tap to rotate"}
+                          </small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+                <div className="stack-controls">
+                  <button className="button primary" onClick={check}>
+                    Check solution
+                  </button>
+                  <button
+                    className="button secondary"
+                    onClick={undo}
+                    disabled={solved || !placements.length}
+                  >
+                    Undo
+                  </button>
+                  <button
+                    className="button secondary"
+                    onClick={clearBoard}
+                    disabled={solved}
+                  >
+                    Clear
+                  </button>
                 </div>
-              </section>
-              <div className="stack-controls">
-                <button className="button primary" onClick={check}>
-                  Check solution
-                </button>
-                <button
-                  className="button secondary"
-                  onClick={undo}
-                  disabled={solved || !placements.length}
-                >
-                  Undo
-                </button>
-                <button
-                  className="button secondary"
-                  onClick={clearBoard}
-                  disabled={solved}
-                >
-                  Clear
-                </button>
-              </div>
-            </aside>
-          </div>
+              </aside>
+            </div>
+          )}
         </section>
       </div>
       <AdSlot placement="post-gameplay" />

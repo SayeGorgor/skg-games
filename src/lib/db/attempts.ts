@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, or, isNull, sql } from "drizzle-orm";
 import { getDb } from "./index";
 import { dailyChallenges, gameAttempts, games } from "./schema";
 
@@ -43,6 +43,77 @@ export async function recordAttempt(input: {
             ),
           )
           .limit(1);
+  // A validated retry may fill an owned legacy snapshot, never its score or
+  // timestamp. The conditional UPDATE makes concurrent backfills idempotent.
+  const snapshot = input.result as { placements?: unknown } | null;
+  if (
+    input.gameSlug === "perfect-stack" &&
+    input.mode === "daily" &&
+    input.verified &&
+    input.userId &&
+    input.variant &&
+    input.challengeDate &&
+    snapshot?.placements &&
+    input.moves !== null &&
+    input.durationMs !== null
+  ) {
+    const [existing] = await db
+      .select({ id: gameAttempts.id })
+      .from(gameAttempts)
+      .where(
+        and(
+          eq(gameAttempts.userId, input.userId),
+          eq(gameAttempts.gameSlug, "perfect-stack"),
+          eq(gameAttempts.mode, "daily"),
+          eq(gameAttempts.status, "completed"),
+          eq(gameAttempts.solved, true),
+          eq(gameAttempts.variant, input.variant),
+          or(
+            eq(gameAttempts.challengeDate, input.challengeDate),
+            challenge ? eq(gameAttempts.challengeId, challenge.id) : undefined,
+          ),
+        ),
+      )
+      .orderBy(
+        sql`${gameAttempts.moves} ASC NULLS LAST`,
+        sql`${gameAttempts.completedAt} ASC NULLS LAST`,
+        sql`coalesce(${gameAttempts.clientEventId}, ${gameAttempts.id}) ASC`,
+      )
+      .limit(1);
+    if (existing) {
+      await db
+        .update(gameAttempts)
+        .set({
+          result: sql`coalesce(${gameAttempts.result}, '{}'::jsonb) || jsonb_build_object('placements', ${JSON.stringify(snapshot.placements)}::jsonb)`,
+          puzzleSeed: sql`coalesce(${gameAttempts.puzzleSeed}, ${input.puzzleSeed ?? null})`,
+        })
+        .where(
+          and(
+            eq(gameAttempts.id, existing.id),
+            eq(gameAttempts.userId, input.userId),
+            eq(gameAttempts.gameSlug, "perfect-stack"),
+            eq(gameAttempts.mode, "daily"),
+            eq(gameAttempts.status, "completed"),
+            eq(gameAttempts.solved, true),
+            eq(gameAttempts.variant, input.variant),
+            eq(gameAttempts.moves, input.moves),
+            eq(gameAttempts.durationMs, input.durationMs),
+            or(
+              eq(gameAttempts.challengeDate, input.challengeDate),
+              challenge
+                ? eq(gameAttempts.challengeId, challenge.id)
+                : undefined,
+            ),
+            or(
+              isNull(gameAttempts.puzzleSeed),
+              eq(gameAttempts.puzzleSeed, input.puzzleSeed!),
+            ),
+            sql`(${gameAttempts.result}->'placements' IS NULL OR ${gameAttempts.result}->'placements' = 'null'::jsonb OR ${gameAttempts.result}->'placements' = '[]'::jsonb)`,
+          ),
+        );
+      return true;
+    }
+  }
   await db
     .insert(gameAttempts)
     .values({

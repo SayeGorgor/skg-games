@@ -6,9 +6,9 @@ import { generateStackPuzzle } from "@/lib/games/perfect-stack/generator";
 import {
   getPracticeStackSeed,
   getStackStars,
-  isStackSolved,
   validPublicSeed,
 } from "@/lib/games/perfect-stack";
+import { validCompletedStackPlacements } from "@/lib/games/perfect-stack/completion";
 import { getDailyAlibiChallenge } from "@/lib/games/daily-alibi/daily";
 import { parseResult, resultKey } from "@/lib/results/shared";
 import { accountKey } from "@/lib/auth/account-key";
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
             body.challengeNumber !== null &&
             puzzle.challengeNumber !== body.challengeNumber) ||
           body.moves! < puzzle.pieceCount ||
-          !isStackSolved(puzzle, body.result.placements)
+          !validCompletedStackPlacements(puzzle, body.result.placements)
         )
           return NextResponse.json(
             { error: "Invalid solution" },

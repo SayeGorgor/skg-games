@@ -18,6 +18,7 @@ export function StackVictory({
   seconds,
   progress,
   stars: savedStars,
+  autoOpen = true,
 }: {
   puzzle: StackPuzzle;
   placements: StackPlacement[];
@@ -25,6 +26,7 @@ export function StackVictory({
   seconds: number;
   progress: DailyStackProgress | null;
   stars?: 1 | 2 | 3;
+  autoOpen?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const router = useRouter();
@@ -32,8 +34,8 @@ export function StackVictory({
   const titleId = useId();
   const descriptionId = useId();
   useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
+    if (autoOpen) dialog.current?.showModal();
+  }, [autoOpen]);
 
   const colors = new Map(puzzle.pieces.map((piece) => [piece.id, piece.color]));
   const board = new Map(

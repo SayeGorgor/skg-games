@@ -113,6 +113,43 @@ export function queueResult(value: GameResult) {
 export function storageUnavailable() {
   return volatile.length > 0;
 }
+export function ownedStackResults(accountKey: string, date: string) {
+  return read()
+    .entries.filter(
+      (e) =>
+        e.owner === accountKey &&
+        e.value.gameSlug === "perfect-stack" &&
+        e.value.mode === "daily" &&
+        e.value.challengeDate === date,
+    )
+    .map((e) => e.value);
+}
+// Reuse the completion queue and original event identity for missing snapshots.
+// This is called only for a legacy result returned by the account progress API.
+export function queueStackBackfill(accountKey: string, value: GameResult) {
+  if (
+    actor !== accountKey ||
+    value.gameSlug !== "perfect-stack" ||
+    value.mode !== "daily" ||
+    !parseResult(value)
+  )
+    return false;
+  const store = read();
+  const entry = store.entries.find(
+    (e) => e.owner === accountKey && resultKey(e.value) === resultKey(value),
+  );
+  if (entry) {
+    entry.value = value;
+    entry.synced = false;
+  } else
+    store.entries.push({
+      value,
+      owner: accountKey,
+      synced: false,
+      guestId: null,
+    });
+  return write(store);
+}
 export function endResultSession() {
   actor = null;
   // Local completed boards remain untouched, but the next guest gets a new claim group.

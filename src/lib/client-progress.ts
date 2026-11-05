@@ -1,9 +1,10 @@
+import {
+  validCompletedStackPlacements,
+  stackAccountCacheKey,
+} from "./games/perfect-stack/completion";
 import { getGameDate } from "./game-date";
 import { fingerprintAlibiCase, type DailyAlibiCase } from "./games/alibi";
 import {
-  isStackSolved,
-  oriented,
-  shapeKey,
   type Cell,
   type PublicStackPuzzle,
   type StackDifficulty,
@@ -23,7 +24,7 @@ function readLocalProgressStorage(): Record<string, unknown> {
   return {};
 }
 
-export function getLocalProgress(): LocalProgress {
+export function getLocalProgress(scope?: string | null): LocalProgress {
   if (typeof window === "undefined")
     return { alibiSolved: false, stackSolved: false };
   const saved = readLocalProgressStorage();
@@ -33,7 +34,7 @@ export function getLocalProgress(): LocalProgress {
       saved.alibiSolved === true &&
       (saved.alibiSolvedDate === undefined ||
         saved.alibiSolvedDate === getGameDate()),
-    stackSolved: isStackDailyComplete(),
+    stackSolved: isStackDailyComplete(getGameDate(), scope),
   };
 }
 
@@ -176,6 +177,7 @@ export type StackDifficultyResult = {
   durationMs: number;
   // Optional only so completion metadata written before board persistence survives.
   puzzleSeed?: string;
+  completedAt?: string;
   placements?: StackPlacement[];
 };
 export type RestoredDailyStackState = StackDifficultyResult & {
@@ -217,10 +219,15 @@ function readPlacements(value: unknown): StackPlacement[] | null {
     return null;
   return value as StackPlacement[];
 }
-function readStackStorage(): Record<string, unknown> {
+function stackStorageKey(scope?: string | null) {
+  return scope ? `${STACK_KEY}:account:${scope}` : STACK_KEY;
+}
+function readStackStorage(scope?: string | null): Record<string, unknown> {
   if (typeof window !== "undefined")
     try {
-      const all: unknown = JSON.parse(localStorage.getItem(STACK_KEY) ?? "{}");
+      const all: unknown = JSON.parse(
+        localStorage.getItem(stackStorageKey(scope)) ?? "{}",
+      );
       if (isRecord(all)) return all;
     } catch {
       /* A blocked or malformed store must not prevent playing. */
@@ -231,29 +238,14 @@ export function isValidPersistedStackSolution(
   puzzle: PublicStackPuzzle,
   value: unknown,
 ): value is StackPlacement[] {
-  const placements = readPlacements(value);
-  if (!placements || placements.length !== puzzle.pieces.length) return false;
-  for (const placement of placements) {
-    const piece = puzzle.pieces.find((piece) => piece.id === placement.pieceId);
-    if (
-      !piece ||
-      placement.anchor[0] < 0 ||
-      placement.anchor[1] < 0 ||
-      placement.anchor[0] >= puzzle.rows ||
-      placement.anchor[1] >= puzzle.cols ||
-      placement.cells.length !== piece.cells.length ||
-      shapeKey(placement.cells) !==
-        shapeKey(oriented(piece, placement.rotation))
-    )
-      return false;
-  }
-  return isStackSolved(puzzle, placements);
+  return validCompletedStackPlacements(puzzle, value);
 }
 export function getStackDailyProgress(
   date = getGameDate(),
+  scope?: string | null,
 ): DailyStackProgress {
   const progress: DailyStackProgress = { date, difficulties: {} };
-  const saved = readStackStorage()[date];
+  const saved = readStackStorage(scope)[date];
   if (!isRecord(saved) || saved.date !== date || !isRecord(saved.difficulties))
     return progress;
   for (const difficulty of ["small", "medium", "hard"] as const) {
@@ -277,6 +269,9 @@ export function getStackDailyProgress(
       moves: result.moves,
       durationMs: result.durationMs,
       stars: result.stars as 1 | 2 | 3,
+      ...(typeof result.completedAt === "string"
+        ? { completedAt: result.completedAt }
+        : {}),
       ...(typeof result.puzzleSeed === "string"
         ? { puzzleSeed: result.puzzleSeed }
         : {}),
@@ -314,8 +309,9 @@ export function markStackDailySolved(
   difficulty: StackDifficulty,
   result: RestoredDailyStackState,
   puzzle?: PublicStackPuzzle,
+  scope?: string | null,
 ) {
-  const current = getStackDailyProgress(date),
+  const current = getStackDailyProgress(date, scope),
     old = current.difficulties[difficulty];
   // A legacy, stale or corrupt result must never prevent a replay saving a real board.
   const oldRestorable =
@@ -338,14 +334,36 @@ export function markStackDailySolved(
   };
   try {
     localStorage.setItem(
-      STACK_KEY,
-      JSON.stringify({ ...readStackStorage(), [date]: progress }),
+      stackStorageKey(scope),
+      JSON.stringify({ ...readStackStorage(scope), [date]: progress }),
     );
   } catch {}
   return progress;
 }
-export function isStackDailyComplete(date = getGameDate()) {
-  return Object.values(getStackDailyProgress(date).difficulties).some(
-    (r) => r?.solved,
-  );
+export function isStackDailyComplete(
+  date = getGameDate(),
+  scope?: string | null,
+) {
+  if (
+    Object.values(getStackDailyProgress(date, scope).difficulties).some(
+      (r) => r?.solved,
+    )
+  )
+    return true;
+  if (scope)
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(stackAccountCacheKey(scope, date)) ?? "null",
+      );
+      return (
+        saved?.accountKey === scope &&
+        saved?.challengeDate === date &&
+        Object.values(saved.difficulties ?? {}).some(
+          (r) => isRecord(r) && r.completed === true,
+        )
+      );
+    } catch {
+      /* An unavailable cache cannot supply a completion indicator. */
+    }
+  return false;
 }

@@ -21,7 +21,8 @@
     "test:responsive": "tsx scripts/verify-responsive.ts",
     "test:auth-browser": "tsx scripts/verify-auth.ts",
     "generate:alibi-dailies": "tsx scripts/generate-alibi-dailies.ts",
-    "validate:alibi-cases": "tsx scripts/validate-alibi-cases.ts"
+    "validate:alibi-cases": "tsx scripts/validate-alibi-cases.ts",
+    "test:stack-account": "node --import tsx scripts/verify-stack-account.ts"
   },
   "dependencies": {
     "@neondatabase/auth": "^0.7.0-beta",

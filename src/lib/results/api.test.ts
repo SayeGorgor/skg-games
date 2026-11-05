@@ -218,6 +218,30 @@ describe("authenticated completion and private history APIs", () => {
       expect.objectContaining({ verified: false, completedAt: null }),
     );
   });
+  it("rejects a valid shape paired with an incorrect anchor or puzzle identity", async () => {
+    const generated = generateStackPuzzle("small", "snapshot-validation", {
+      mode: "daily",
+      challengeDate: "2026-11-03",
+      challengeNumber: 136,
+    });
+    vi.mocked(getDailyStackPuzzle).mockResolvedValue(generated.publicPuzzle);
+    const body = fixture({
+      gameSlug: "perfect-stack",
+      difficulty: "small",
+      puzzleSeed: generated.publicPuzzle.seed,
+      challengeNumber: 136,
+      moves: generated.publicPuzzle.pieceCount,
+      durationMs: 12000,
+      result: { placements: generated.canonicalSolution },
+    });
+    const wrongAnchor = structuredClone(body);
+    wrongAnchor.result.placements![0].anchor = [90, 90];
+    expect((await POST(request(wrongAnchor))).status).toBe(400);
+    expect(
+      (await POST(request({ ...body, puzzleSeed: "different-puzzle" }))).status,
+    ).toBe(400);
+    expect(recordAttempt).not.toHaveBeenCalled();
+  });
   it("returns retryable errors when persistence fails", async () => {
     vi.mocked(recordAttempt)
       .mockResolvedValueOnce(false)
