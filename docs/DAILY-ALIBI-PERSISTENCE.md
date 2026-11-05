@@ -1,5 +1,7 @@
 # Daily Alibi completed results
 
+The page now resolves the current date through `src/lib/games/daily-alibi/daily.ts` and the existing shared challenge/case/clue/suspect tables. The completion API resolves that same stored case for the result's original date and verifies its challenge number. Catalog identities and fingerprints reserve assignments; the existing browser fingerprint and version-1 result snapshots below are unchanged. See **Daily Alibi Content & Seeding** in the README for migration, preparation and editorial review. The old bundled case is available only with explicit non-production `ALIBI_USE_DEVELOPMENT_FIXTURE=true`.
+
 Daily accusations are saved inside the existing `skg-progress-v1` localStorage object, under `dailyAlibiResults[challengeDate]`. A version-1 snapshot contains `completed`, `challengeDate`, `challengeNumber`, `puzzleFingerprint`, `accusedSuspectId`, and `completedAt`. It stores neither suspect objects nor explanation text nor a second copy of correctness.
 
 `client-progress.ts` validates the snapshot's structure, date, challenge number, content fingerprint and accused suspect against the loaded case. The fingerprint is a deterministic, browser-safe FNV-1a 64-bit hash of canonical public case content, ordered by suspect key. It is content identity, not a security mechanism. A changed case cannot reuse an old accusation merely because its date or number was reused. Correctness, suspect name and explanation are reconstructed from the current matching case.
@@ -23,3 +25,11 @@ Daily Alibi uses the existing global `html[data-theme]` source and `skg-theme` p
 Existing result state supplies presentation-only `correct`/`incorrect` suspect classes and `success`/`failure` accusation classes. Color changes are entirely CSS-driven, so switching themes does not remount or reset the game. Disabled suspect cards stay readable and do not gain hover effects.
 
 Run `npm run test:alibi-theme` against a running development server. It captures Light/Dark screenshots at 1440/1024/768/390 pixels, checks live selection and result preservation, refresh/navigation in the opposite theme, unchanged saved progress, no duplicate submissions, disabled hover behavior, and sampled text/control contrast of at least 4.5:1. Screenshots are written to ignored `artifacts/alibi-theme/`.
+
+## Light-theme refinement
+
+Light-only variables are scoped to `.alibi-shell`, leaving other games and the dark palette unchanged. Metadata and roles use antique ochre `#865316`, badges use `#f1e4cb` with an inset warm border, evidence retains parchment, crimson is `#a64248`, and success uses forest green `#285c42` on sage `#e2ede5`. Primary and secondary ink are `#27231f` and `#625b51`.
+
+Per the requested visual preference, completed unselected suspects retain their original 50% whole-card opacity and greyscale. They remain disabled; this intentionally faded treatment is excluded from AA contrast-pass claims. Selected cards and result panels retain full-opacity text. No gameplay or persistence code changes.
+
+The theme verifier now loads the assigned database case, mocks account stats and successful sync receipts, records foreground/background and light control-border ratios in `artifacts/alibi-theme/contrast.json`, and captures all four viewport widths. It checks theme switching, both outcomes, restored results, locked cards and no restoration submissions. Run `npm run test:alibi-theme` against the development server.

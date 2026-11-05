@@ -108,18 +108,14 @@ export function StatsClient() {
   const rows =
     safeAccount?.results ?? filtered.slice((page - 1) * 25, page * 25);
   const total = safeAccount?.total ?? filtered.length;
-  return (
-    <section className="container stats-page">
-      <div className="stats-intro">
-        <span className="eyebrow gold">YOUR PLAY, OVER TIME</span>
-        <h1>A little progress. Every day.</h1>
-        <p className="lede">
-          Your finished challenges, personal bests, and the days you kept coming
-          back.
-        </p>
-      </div>
-      {!viewer.authenticated && (
-        <div className="panel stats-notice">
+  if (!viewer.authenticated) {
+    return (
+      <section
+        className="container stats-page stats-signed-out"
+        aria-labelledby="stats-sign-in-title"
+      >
+        <div className="stats-sign-in-content">
+          <h1 id="stats-sign-in-title">Your progress, wherever you play.</h1>
           <p>
             Your results are saved in this browser. Create an account to keep
             them across devices.
@@ -139,7 +135,19 @@ export function StatsClient() {
             </Link>
           </div>
         </div>
-      )}
+      </section>
+    );
+  }
+  return (
+    <section className="container stats-page">
+      <div className="stats-intro">
+        <span className="eyebrow gold">YOUR PLAY, OVER TIME</span>
+        <h1>A little progress. Every day.</h1>
+        <p className="lede">
+          Your finished challenges, personal bests, and the days you kept coming
+          back.
+        </p>
+      </div>
       {viewer.authenticated && (
         <div className="stats-sync" role="status">
           {syncStatus === "syncing"
@@ -208,7 +216,12 @@ export function StatsClient() {
       )}
       <div className="stats-game-grid">
         {summary.byGame
-          .filter((s) => s.played > 0)
+          .filter((s) => s.slug === "perfect-stack" || s.played > 0)
+          .sort(
+            (a, b) =>
+              Number(b.slug === "perfect-stack") -
+              Number(a.slug === "perfect-stack"),
+          )
           .map((s) => (
             <article className="panel" key={s.slug}>
               <span
@@ -248,27 +261,29 @@ export function StatsClient() {
                 </div>
               </dl>
               {s.slug === "perfect-stack" &&
-                s.difficulties
-                  .filter((d) => d.played)
-                  .map((d) => (
-                    <div className="stats-difficulty" key={d.difficulty}>
-                      <h3>{d.difficulty}</h3>
-                      <p>
-                        {d.played} completed
-                        {d.fewestMoves !== null &&
-                          ` · Best: ${d.fewestMoves} moves`}
-                        {d.averageMs !== null &&
-                          ` · Average: ${duration(d.averageMs)}`}
-                      </p>
-                    </div>
-                  ))}
-              <p className="stats-caption">
-                Daily streaks count successful puzzle dates. Multiple
-                difficulties on one day count as one day.
-              </p>
+                s.difficulties.map((d) => (
+                  <div className="stats-difficulty" key={d.difficulty}>
+                    <h3>
+                      {
+                        { small: "Small", medium: "Medium", hard: "Large" }[
+                          d.difficulty
+                        ]
+                      }
+                    </h3>
+                    <p>
+                      {d.played} completed
+                      {` · Best: ${d.fewestMoves ?? "N/A"} moves`}
+                      {` · Average: ${d.averageMs === null ? "N/A" : duration(d.averageMs)}`}
+                    </p>
+                  </div>
+                ))}
             </article>
           ))}
       </div>
+      <p className="stats-caption">
+        Daily streaks count successful puzzle dates. Multiple difficulties on
+        one day count as one day.
+      </p>
       <section className="stats-history" aria-labelledby="history-heading">
         <div className="section-heading">
           <h2 id="history-heading">Your game history</h2>

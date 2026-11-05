@@ -9,7 +9,7 @@ import {
   isStackSolved,
   validPublicSeed,
 } from "@/lib/games/perfect-stack";
-import { dailyAlibi } from "@/lib/games/alibi";
+import { getDailyAlibiChallenge } from "@/lib/games/daily-alibi/daily";
 import { parseResult, resultKey } from "@/lib/results/shared";
 import { accountKey } from "@/lib/auth/account-key";
 
@@ -81,12 +81,18 @@ export async function POST(request: Request) {
     }
     // Legacy local completions without boards remain explicitly unverified.
   } else {
-    // The currently playable Alibi page serves this bundled case for each date.
-    if (body.challengeNumber !== dailyAlibi.challengeNumber)
+    let alibi;
+    try {
+      alibi = await getDailyAlibiChallenge(body.challengeDate!);
+    } catch {
+      return NextResponse.json(
+        { error: "Case unavailable; retry later" },
+        { status: 503 },
+      );
+    }
+    if (body.challengeNumber !== alibi.challengeNumber)
       return NextResponse.json({ error: "Unknown case" }, { status: 400 });
-    const suspect = dailyAlibi.suspects.find(
-      (s) => s.key === body.result.suspect,
-    );
+    const suspect = alibi.suspects.find((s) => s.key === body.result.suspect);
     if (!suspect)
       return NextResponse.json({ error: "Unknown suspect" }, { status: 400 });
     body.solved = suspect.correct;

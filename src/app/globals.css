@@ -247,6 +247,7 @@ button:disabled {
   border: 1px solid var(--border);
   padding: calc(12px * var(--header-scale)) var(--header-gutter);
   position: relative;
+  font-family: "Satoshi Medium", system-ui, sans-serif;
   z-index: 5;
 }
 .header-inner {
@@ -331,7 +332,8 @@ button:disabled {
   border-radius: 6px;
   font-size: 14px;
 }
-.header-menu nav a:hover {
+.header-menu nav a:is(:hover, :focus-visible),
+.header-menu nav .header-menu-auth-actions a:is(:hover, :focus-visible) {
   background: var(--bg-raised);
 }
 .header-streak {
@@ -451,6 +453,46 @@ html[data-theme="dark"] .header-plus:focus-visible {
 .header-account [role="alert"] {
   flex-basis: 100%;
 }
+.header-menu nav .header-menu-sign-out {
+  display: block;
+}
+.header-menu-auth-actions {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.header-menu nav .header-menu-auth-actions .header-account {
+  display: block;
+}
+.header-menu nav .header-menu-auth-actions a {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  justify-content: flex-start;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-weight: inherit;
+}
+.header-menu .header-menu-mobile-actions:empty {
+  display: none;
+}
+.header-menu nav .header-menu-sign-out button {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+.header-menu nav .header-menu-sign-out button:not(:disabled):is(:hover, :focus-visible) {
+  background: var(--bg-raised);
+  color: var(--text);
+}
 .header-account .header-sign-in {
   transition-property: background-color, color, border-color;
   transition-duration: 160ms;
@@ -458,7 +500,7 @@ html[data-theme="dark"] .header-plus:focus-visible {
   font-weight: bold;
   border-width: 2px;
 }
-.header-account .header-sign-in:hover,
+.header-account .header-sign-in:not(:disabled):hover,
 .header-account .header-sign-in:focus-visible {
   background: var(--bg-inverse);
   border-color: var(--bg-inverse);
@@ -1927,6 +1969,50 @@ body:has(.stack-help-dialog[open]) {
     text-align: center;
   }
 }
+/* Daylight case-file palette, scoped so other games keep their own colors. */
+html:not([data-theme="dark"]) .alibi-shell {
+  --alibi-page: #f3efe7;
+  --alibi-panel: #faf7f1;
+  --alibi-raised: #f4ecdf;
+  --alibi-paper: #eee4d2;
+  --alibi-paper-text: #27231f;
+  --alibi-paper-border: #cdbda5;
+  --alibi-text: #27231f;
+  --alibi-text2: #625b51;
+  --alibi-border: #d5cbbb;
+  --alibi-border-strong: #82725e;
+  --alibi-control-border: #82725e;
+  --alibi-gold: #865316;
+  --alibi-gold-hover: #70420f;
+  --alibi-gold-soft: #f1e4cb;
+  --alibi-gold-border: #c6a06b;
+  --alibi-red: #a64248;
+  --alibi-accent-text: var(--alibi-red);
+  --alibi-accent-hover: #90383e;
+  --alibi-accent-active: #7c3035;
+  --alibi-selected-surface: #f3e1df;
+  --alibi-selected-border: var(--alibi-red);
+  --alibi-hover-border: var(--alibi-border-strong);
+  --alibi-success: #285c42;
+  --alibi-success-soft: #e2ede5;
+  --alibi-danger: #a64248;
+  --alibi-danger-soft: #f3e1df;
+  --alibi-result-success: var(--alibi-success-soft);
+  --alibi-result-failure: var(--alibi-danger-soft);
+  --alibi-focus: var(--alibi-red);
+  --alibi-disabled-surface: #ede8de;
+  --alibi-disabled-text: #625b51;
+  --alibi-shadow: 0 8px 24px rgb(61 43 27 / 0.06);
+  --alibi-card-shadow: 0 2px 8px rgb(61 43 27 / 0.04);
+  --alibi-hover-shadow: 0 5px 14px rgb(61 43 27 / 0.08);
+}
+html:not([data-theme="dark"]) .alibi-shell .case-pill {
+  background: var(--alibi-gold-soft);
+  box-shadow: inset 0 0 0 1px var(--alibi-gold-border);
+}
+html:not([data-theme="dark"]) .alibi-shell .alibi-help-button:hover {
+  color: var(--alibi-gold-hover);
+}
 .alibi-shell {
   min-height: 100dvh;
   background: var(--alibi-page);
@@ -2249,6 +2335,7 @@ body:has(.stack-help-dialog[open]) {
   line-height: 1.5;
 }
 .objective {
+  margin-top: 12px;
   padding: 12px 16px;
   background: var(--alibi-panel);
   border-radius: 12px;
@@ -2323,6 +2410,15 @@ body:has(.stack-help-dialog[open]) {
 .alibi-stat small {
   font-size: 13px;
   color: var(--alibi-text2);
+}
+.alibi-run-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  margin: 0;
+  color: var(--alibi-text);
+  text-align: center;
 }
 .alibi-shell .ad-slot {
   color: var(--text-2);
@@ -2786,6 +2882,38 @@ textarea::placeholder {
 .stats-page {
   padding-block: clamp(32px, 6vw, 72px);
 }
+.stats-signed-out {
+  display: grid;
+  place-items: center;
+  min-height: calc(100svh - 160px);
+  text-align: center;
+}
+.stats-sign-in-content {
+  width: min(100%, 560px);
+}
+.stats-sign-in-content h1 {
+  margin: 0 0 20px;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.stats-sign-in-content p {
+  max-width: 440px;
+  margin: 0 auto;
+  color: var(--text-2);
+  font-size: 18px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.stats-sign-in-content .button-row {
+  justify-content: center;
+  margin: 28px auto 0;
+  max-width: 400px;
+}
+.stats-sign-in-content .button-row a {
+  flex: 1 1 160px;
+}
 .stats-intro {
   max-width: 720px;
   margin-bottom: 28px;
@@ -2835,7 +2963,7 @@ textarea::placeholder {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-  margin-block: 24px 40px;
+  margin-block: 24px 0;
 }
 .stats-game-grid h2 {
   margin-block: 10px 20px;
@@ -2871,6 +2999,9 @@ textarea::placeholder {
 .stats-caption {
   color: var(--muted);
   font-size: 13px;
+}
+.stats-game-grid + .stats-caption {
+  margin-block: 10px 40px;
 }
 .stats-empty {
   margin-block: 24px;

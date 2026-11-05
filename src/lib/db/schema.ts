@@ -67,6 +67,9 @@ export const alibiCases = pgTable("alibi_cases", {
   challengeId: uuid("challenge_id")
     .primaryKey()
     .references(() => dailyChallenges.id, { onDelete: "cascade" }),
+  // Nullable for legacy cases; new catalog assignments always set both.
+  caseId: text("case_id").unique(),
+  fingerprint: text("fingerprint").unique(),
   title: text("title").notNull(),
   dek: text("dek").notNull(),
   briefTitle: text("brief_title").notNull(),

@@ -19,7 +19,9 @@
     "test:alibi-persistence": "tsx scripts/verify-alibi-persistence.ts",
     "test:alibi-theme": "tsx scripts/verify-alibi-theme.ts",
     "test:responsive": "tsx scripts/verify-responsive.ts",
-    "test:auth-browser": "tsx scripts/verify-auth.ts"
+    "test:auth-browser": "tsx scripts/verify-auth.ts",
+    "generate:alibi-dailies": "tsx scripts/generate-alibi-dailies.ts",
+    "validate:alibi-cases": "tsx scripts/validate-alibi-cases.ts"
   },
   "dependencies": {
     "@neondatabase/auth": "^0.7.0-beta",
@@ -43,6 +45,7 @@
     "better-call": "1.4.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "^24.0.0",

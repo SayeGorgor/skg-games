@@ -1,11 +1,18 @@
 ﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/auth/viewer", () => ({ getViewer: vi.fn() }));
 vi.mock("@/lib/db/attempts", () => ({ recordAttempt: vi.fn() }));
+vi.mock("@/lib/games/daily-alibi/daily", () => ({
+  getDailyAlibiChallenge: vi.fn(),
+}));
 vi.mock("@/lib/results/server", () => ({ readAccountHistory: vi.fn() }));
 vi.mock("@/lib/games/perfect-stack/daily", () => ({
   getDailyStackPuzzle: vi.fn(),
 }));
 import { getViewer } from "../auth/viewer";
+import { getDailyAlibiChallenge } from "../games/daily-alibi/daily";
+import { dailyAlibi } from "../games/alibi";
+import { alibiCatalog } from "../games/daily-alibi/catalog";
+import { toDailyAlibiCase } from "../games/daily-alibi/types";
 import { accountKey } from "../auth/account-key";
 import { recordAttempt } from "../db/attempts";
 import { readAccountHistory } from "./server";
@@ -50,9 +57,49 @@ beforeEach(() => {
     email: null,
   });
   vi.mocked(recordAttempt).mockResolvedValue(true);
+  vi.mocked(getDailyAlibiChallenge).mockImplementation(async (date) => ({
+    ...dailyAlibi,
+    challengeDate: date!,
+  }));
 });
 afterEach(() => vi.useRealTimers());
 describe("authenticated completion and private history APIs", () => {
+  it("verifies seeded accusations against their date and rejects a substituted challenge number", async () => {
+    const game = toDailyAlibiCase(alibiCatalog[2], "2026-11-03", 450);
+    vi.mocked(getDailyAlibiChallenge).mockResolvedValue(game);
+    const wrong = game.suspects.find((s) => !s.correct)!;
+    const body = fixture({
+      challengeNumber: 450,
+      result: { suspect: wrong.key },
+      solved: true,
+    });
+    expect((await POST(request(body))).status).toBe(200);
+    expect(getDailyAlibiChallenge).toHaveBeenCalledWith("2026-11-03");
+    expect(recordAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        solved: false,
+        verified: true,
+        challengeNumber: 450,
+        result: { suspect: wrong.key },
+      }),
+    );
+    expect(
+      (await POST(request({ ...body, challengeNumber: 451 }))).status,
+    ).toBe(400);
+    expect(
+      (
+        await POST(
+          request({ ...body, result: { suspect: "another-case-suspect" } }),
+        )
+      ).status,
+    ).toBe(400);
+  });
+  it("rejects tomorrow's case before server retrieval", async () => {
+    expect(
+      (await POST(request(fixture({ challengeDate: "2026-11-04" })))).status,
+    ).toBe(400);
+    expect(getDailyAlibiChallenge).not.toHaveBeenCalled();
+  });
   it("rejects cross-origin writes before database access", async () => {
     expect(
       (await POST(request(fixture(), { origin: "https://attacker.test" })))

@@ -9,9 +9,11 @@ import { endResultSession } from "@/lib/results/local";
 export function AccountControls({
   mode,
   primary = false,
+  variant = "account",
 }: {
   mode?: "sign-in" | "sign-up";
   primary?: boolean;
+  variant?: "account" | "sign-out" | "menu-auth";
 }) {
   const { viewer, adsEnabled } = useViewer();
   const authMode = mode ?? (adsEnabled ? "sign-in" : "sign-up");
@@ -34,21 +36,39 @@ export function AccountControls({
       setBusy(false);
     }
   }
+  if (variant === "sign-out" && !viewer.authenticated) return null;
   return (
-    <div className="header-account">
+    <div
+      className={`header-account${variant === "sign-out" ? " header-menu-sign-out" : ""}`}
+    >
       {viewer.authenticated ? (
         <>
-          <Link href="/account">
-            {adsEnabled && viewer.premium ? "Account · Plus" : "Account"}
-          </Link>
-          <button type="button" disabled={busy} onClick={signOut}>
-            {busy ? "Signing out…" : "Sign out"}
-          </button>
+          {variant === "account" && (
+            <Link className="header-plus" href="/account">
+              {adsEnabled && viewer.premium ? "Account · Plus" : "Account"}
+            </Link>
+          )}
+          {variant === "sign-out" && (
+            <button
+              className="header-sign-in"
+              type="button"
+              disabled={busy}
+              onClick={signOut}
+            >
+              {busy ? "Signing out…" : "Sign out"}
+            </button>
+          )}
         </>
       ) : (
         <>
           <Link
-            className={primary ? "header-plus" : "header-sign-in"}
+            className={
+              variant === "menu-auth"
+                ? undefined
+                : primary
+                  ? "header-plus"
+                  : "header-sign-in"
+            }
             href={authUrl(authMode, "standard", path)}
             onClick={(event) => {
               event.preventDefault();

@@ -1,17 +1,84 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useViewer } from "@/components/auth/viewer-provider";
+import type { summarize } from "@/lib/results/shared";
+
+type Run = ReturnType<typeof summarize>["byGame"][number];
 
 export function AlibiRunStats() {
+  const { viewer } = useViewer();
+  const scope = viewer.authenticated ? viewer.accountKey : null;
+  const [state, setState] = useState<{
+    scope: string;
+    run?: Run;
+    error?: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!scope) return;
+    const controller = new AbortController();
+    let version = 0;
+    const load = async () => {
+      const request = ++version;
+      try {
+        const response = await fetch("/api/stats?game=daily-alibi", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Stats unavailable");
+        const data: {
+          accountKey: string;
+          summary: ReturnType<typeof summarize>;
+        } = await response.json();
+        if (data.accountKey !== scope) throw new Error("Account changed");
+        const run = data.summary.byGame.find(
+          (game) => game.slug === "daily-alibi",
+        );
+        if (!run) throw new Error("Missing stats");
+        if (!controller.signal.aborted && request === version)
+          setState({ scope, run });
+      } catch {
+        if (!controller.signal.aborted && request === version)
+          setState({ scope, error: true });
+      }
+    };
+    const frame = requestAnimationFrame(() => void load());
+    window.addEventListener("skg-results-synced", load);
+    window.addEventListener("focus", load);
+    return () => {
+      cancelAnimationFrame(frame);
+      controller.abort();
+      window.removeEventListener("skg-results-synced", load);
+      window.removeEventListener("focus", load);
+    };
+  }, [scope]);
+
+  if (!viewer.authenticated)
+    return <p className="alibi-run-message">Sign in to track your stats</p>;
+  const current = state?.scope === scope ? state : null;
+  if (!current?.run)
+    return (
+      <p className="alibi-run-message" role="status">
+        {current?.error
+          ? "Your stats are temporarily unavailable. Please try again shortly."
+          : "Loading your stats…"}
+      </p>
+    );
+  const { run } = current;
+  const accuracy = run.played ? Math.round((run.won / run.played) * 100) : 0;
   return (
     <>
-      <strong>14 days</strong>
+      <strong aria-label={`${run.streak.current} day streak`}>
+        {run.streak.current} {run.streak.current === 1 ? "day" : "days"}
+      </strong>
       <div>
         <span>
-          11<small>solved</small>
+          {run.won}
+          <small>solved</small>
         </span>
         <span>
-          78%<small>accuracy</small>
+          {accuracy}%<small>accuracy</small>
         </span>
       </div>
     </>

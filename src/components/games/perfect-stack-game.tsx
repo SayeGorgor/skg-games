@@ -18,6 +18,7 @@ import {
 } from "@/lib/auth/game-handoff";
 import { SiteHeader } from "@/components/site-header";
 import { newResult, queueResult } from "@/lib/results/local";
+import { getGameDate } from "@/lib/game-date";
 import { StackHowToPlay } from "@/components/games/stack-how-to-play";
 import { StackVictory } from "@/components/games/stack-victory";
 import "./perfect-stack-layout.css";
@@ -138,28 +139,21 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
   const suppressClickRef = useRef(false);
   const boardRef = useRef<HTMLDivElement>(null);
   const pieceGridRef = useRef<HTMLDivElement>(null);
-  const optionsRef = useRef<HTMLDetailsElement>(null);
+  const primaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const close = (event: Event) => {
-      const options = optionsRef.current;
-      if (!options?.open) return;
-      if (event instanceof KeyboardEvent && event.key === "Escape") {
-        options.open = false;
-        options.querySelector("summary")?.focus();
-      } else if (
-        event instanceof globalThis.PointerEvent &&
-        !options.contains(event.target as Node)
-      ) {
-        options.open = false;
-      }
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", close);
-    };
+    const primary = primaryRef.current;
+    const header = primary?.querySelector(".site-header");
+    if (!primary || !header) return;
+    const measure = () =>
+      primary.style.setProperty(
+        "--stack-site-header-height",
+        `${header.getBoundingClientRect().height}px`,
+      );
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    measure();
+    return () => observer.disconnect();
   }, []);
 
   const started = useRef(false);
@@ -446,16 +440,11 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
     setMessage("Last placement removed.");
   }
 
-  function reset() {
+  function clearBoard() {
     if (solved) return;
-    completedRef.current = false;
-    setSolved(false);
     updateDrag(null);
     setPlacements([]);
-    setRotations({});
-    setMoves(0);
-    setSeconds(0);
-    setMessage("Board reset.");
+    setMessage("Board cleared.");
   }
 
   async function complete(next: Placement[], finalMoves: number) {
@@ -509,34 +498,39 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
 
   return (
     <main className="site-shell stack-game-shell">
-      <div className="stack-primary">
+      <div className="stack-primary" ref={primaryRef}>
         <SiteHeader />
         <section className="stack-page container">
           <div className="stack-heading">
             <div className="stack-intro">
               <div>
-                <span className="streak-pill">
+                <span className="stack-puzzle-pill">
                   {puzzle.mode === "daily"
-                    ? `DAILY PUZZLE #${puzzle.challengeNumber}`
+                    ? `PUZZLE #${puzzle.challengeNumber}`
                     : "PRACTICE"}
                 </span>
                 <span className="date-label">
-                  {puzzle.challengeDate
-                    ? new Date(
-                        puzzle.challengeDate + "T12:00:00Z",
-                      ).toLocaleDateString("en-US", {
-                        weekday: "long",
-                        month: "short",
-                        day: "numeric",
-                        timeZone: "UTC",
-                      })
-                    : `Seed: ${puzzle.seed}`}
+                  {new Date(
+                    (puzzle.challengeDate ?? getGameDate()) + "T12:00:00Z",
+                  )
+                    .toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "UTC",
+                    })
+                    .toUpperCase()}
                 </span>
               </div>
-              <h1>Perfect Stack</h1>
+              {puzzle.mode === "practice" && (
+                <span className="stack-practice-seed">Seed: {puzzle.seed}</span>
+              )}
+              <div className="stack-title-row">
+                <h1>Perfect Stack</h1>
+                <StackHowToPlay />
+              </div>
               <p className="lede">Use every piece. Fill every square.</p>
             </div>
-            {!solved && <StackHowToPlay />}
             {solved && (
               <StackVictory
                 puzzle={puzzle}
@@ -547,111 +541,96 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
                 stars={initial.restored?.stars}
               />
             )}
-            <details className="stack-options" ref={optionsRef}>
-              <summary
-                className="button"
-                aria-label="Game options"
-                title="Game options"
-              >
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M4 7h16M4 17h16M9 4v6M15 14v6" />
-                </svg>
-              </summary>
-              <div className="stack-options-panel">
-                <nav className="button-row" aria-label="Game mode">
-                  {(["daily", "practice"] as const).map((mode) => (
-                    <Link
-                      className={`button ${puzzle.mode === mode ? "primary" : "secondary"}`}
-                      key={mode}
-                      href={urlFor(mode, puzzle.difficulty)}
-                    >
-                      {mode.toUpperCase()}
-                    </Link>
-                  ))}
-                </nav>
-                <nav className="stack-difficulties" aria-label="Difficulty">
-                  {(Object.keys(STACK_DIFFICULTIES) as StackDifficulty[]).map(
-                    (d) => {
-                      const config = STACK_DIFFICULTIES[d];
-                      const result = progress?.difficulties[d];
-                      return (
-                        <Link
-                          aria-current={
-                            puzzle.difficulty === d ? "page" : undefined
-                          }
-                          className="panel"
-                          key={d}
-                          href={urlFor(puzzle.mode, d)}
-                        >
-                          <strong>
-                            {d.toUpperCase()}{" "}
-                            {puzzle.mode === "daily" && (
-                              <span className="stack-difficulty-status">
-                                {result ? "★".repeat(result.stars) : "○"}
-                              </span>
-                            )}
-                          </strong>
-                          <span>
-                            {config.rows} &times; {config.cols} ·{" "}
-                            {config.pieceSizes.length} pieces
-                            <span className="stack-difficulty-time">
-                              {" "}
-                              · {config.time}
-                            </span>
-                          </span>
-                          <small>{config.description}</small>
-                        </Link>
-                      );
-                    },
-                  )}
-                </nav>
-                {puzzle.mode === "practice" && (
-                  <div className="button-row">
-                    <button
-                      className="button"
-                      onClick={() => {
-                        window.location.href =
-                          urlFor("practice", puzzle.difficulty) +
-                          "&seed=" +
-                          crypto.randomUUID().slice(0, 8);
-                      }}
-                    >
-                      New puzzle
-                    </button>
-                    <button
-                      className="button"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(
-                            window.location.origin +
-                              window.location.pathname +
-                              urlFor("practice", puzzle.difficulty) +
-                              "&seed=" +
-                              puzzle.seed,
-                          );
-                          setMessage("Challenge link copied.");
-                        } catch {
-                          setMessage(
-                            "Copy the seed from the heading to share this puzzle.",
-                          );
+            <div className="stack-options-panel">
+              <nav className="button-row" aria-label="Game mode">
+                {(["daily", "practice"] as const).map((mode) => (
+                  <Link
+                    className={`button ${puzzle.mode === mode ? "primary" : "secondary"}`}
+                    key={mode}
+                    href={urlFor(mode, puzzle.difficulty)}
+                  >
+                    {mode.toUpperCase()}
+                  </Link>
+                ))}
+              </nav>
+              <nav className="stack-difficulties" aria-label="Difficulty">
+                {(Object.keys(STACK_DIFFICULTIES) as StackDifficulty[]).map(
+                  (d) => {
+                    const config = STACK_DIFFICULTIES[d];
+                    const result = progress?.difficulties[d];
+                    return (
+                      <Link
+                        aria-current={
+                          puzzle.difficulty === d ? "page" : undefined
                         }
-                      }}
-                    >
-                      Copy challenge
-                    </button>
-                  </div>
+                        className="panel"
+                        key={d}
+                        href={urlFor(puzzle.mode, d)}
+                        scroll={false}
+                      >
+                        <strong>
+                          {d === "small" ? "EASY" : d.toUpperCase()}
+                          <span
+                            className="stack-difficulty-dots"
+                            aria-hidden="true"
+                          >
+                            {"●".repeat(
+                              d === "small" ? 1 : d === "medium" ? 2 : 3,
+                            )}
+                          </span>
+                          {puzzle.mode === "daily" && result && (
+                            <span className="stack-difficulty-status">
+                              {"★".repeat(result.stars)}
+                            </span>
+                          )}
+                        </strong>
+                        <span>
+                          {config.rows} &times; {config.cols} ·{" "}
+                          {config.pieceSizes.length} pieces
+                        </span>
+                        <small>{config.description}</small>
+                      </Link>
+                    );
+                  },
                 )}
-              </div>
-            </details>
+              </nav>
+              {puzzle.mode === "practice" && (
+                <div className="button-row">
+                  <button
+                    className="button"
+                    onClick={() => {
+                      window.location.href =
+                        urlFor("practice", puzzle.difficulty) +
+                        "&seed=" +
+                        crypto.randomUUID().slice(0, 8);
+                    }}
+                  >
+                    New puzzle
+                  </button>
+                  <button
+                    className="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(
+                          window.location.origin +
+                            window.location.pathname +
+                            urlFor("practice", puzzle.difficulty) +
+                            "&seed=" +
+                            puzzle.seed,
+                        );
+                        setMessage("Challenge link copied.");
+                      } catch {
+                        setMessage(
+                          "Copy the seed from the heading to share this puzzle.",
+                        );
+                      }
+                    }}
+                  >
+                    Copy challenge
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <div
             className="stack-layout"
@@ -870,10 +849,10 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
                 </button>
                 <button
                   className="button secondary"
-                  onClick={reset}
+                  onClick={clearBoard}
                   disabled={solved}
                 >
-                  Reset
+                  Clear
                 </button>
               </div>
             </aside>

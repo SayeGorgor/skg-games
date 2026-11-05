@@ -49,7 +49,7 @@ function GameCard({ kind }: { kind: "alibi" | "stack" }) {
           : "Fill every square using every piece. Choose Small, Medium, or Hard."}
       </p>
       <small>
-        {alibi ? "3–5 MIN • LOGIC • 1 ATTEMPT" : "2–4 MIN • SPATIAL • DAILY"}
+        {alibi ? "LOGIC • 1 ATTEMPT" : "SPATIAL • DAILY"}
       </small>
       <strong>{alibi ? "PLAY DAILY ALIBI →" : "PLAY PERFECT STACK →"}</strong>
     </Link>
@@ -129,12 +129,13 @@ export function HomeClient() {
           <span>New challenges every day at midnight</span>
         </div>
         <div className="game-grid">
-          <GameCard kind="alibi" />
           <GameCard kind="stack" />
+          <GameCard kind="alibi" />
         </div>
       </section>
 
-      <section className="container free-row">
+      {/* UNCOMMENT */}
+      {/* <section className="container free-row">
         <div className="panel free-panel">
           <span className="eyebrow">PLAY FREE</span>
           <div className="free-panel-main-text">
@@ -156,7 +157,7 @@ export function HomeClient() {
           </div>
         </div>
         <AdSlot />
-      </section>
+      </section> */}
 
       {adsEnabled && (
         <section className="container plus-banner">
@@ -187,7 +188,8 @@ export function HomeClient() {
 
       <footer className="site-footer">
         <span>SKG GAMES • A NEW CHALLENGE EVERY DAY</span>
-        <span>About &nbsp; Privacy &nbsp; Terms &nbsp; Feedback</span>
+        {/* UNCOMMENT */}
+        {/* <span>About &nbsp; Privacy &nbsp; Terms &nbsp; Feedback</span> */}
       </footer>
     </main>
   );

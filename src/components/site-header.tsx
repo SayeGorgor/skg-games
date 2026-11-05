@@ -121,7 +121,10 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
                 id={menuId}
                 aria-label="Main navigation"
                 hidden={!menuOpen}
-                onClick={() => setMenuOpen(false)}
+                onClick={(event) => {
+                  if ((event.target as Element).closest("a"))
+                    setMenuOpen(false);
+                }}
               >
                 <Link href="/">Games</Link>
                 <Link href="/#archive">Archive</Link>
@@ -130,11 +133,15 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
                   {adsEnabled && !viewer.premium && (
                     <Link href="/plus/start">Subscribe</Link>
                   )}
-                  {!adsEnabled && !viewer.authenticated && (
-                    <AccountControls mode="sign-in" />
-                  )}
-                  <AccountControls />
+                  {viewer.authenticated && <AccountControls />}
                 </div>
+                {!viewer.authenticated && (
+                  <div className="header-menu-auth-actions">
+                    <AccountControls mode="sign-in" variant="menu-auth" />
+                    <AccountControls mode="sign-up" variant="menu-auth" />
+                  </div>
+                )}
+                <AccountControls variant="sign-out" />
               </nav>
             </div>
             <Brand />

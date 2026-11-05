@@ -1,15 +1,13 @@
-/* Desktop keeps the header inside its viewport budget; mobile overrides below. */
+/* The heading scrolls away while gameplay keeps its original viewport budget. */
 .stack-game-shell {
   --stack-sidebar-width: clamp(300px, 32vw, 440px);
   min-height: 100dvh;
 }
 .stack-game-shell .stack-primary {
-  height: 100vh;
-  height: 100dvh;
+  --stack-page-space: clamp(8px, 1.5vh, 16px);
+  --stack-page-gap: 12px;
   min-height: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
+  display: block;
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
     env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
@@ -17,7 +15,7 @@
   width: 100%;
   max-width: 1680px;
   min-height: 0;
-  padding: clamp(8px, 1.5vh, 16px) var(--page-gutter);
+  padding: var(--page-gutter) var(--page-gutter) clamp(8px, 1.5vh, 16px);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px;
@@ -25,7 +23,9 @@
 .stack-game-shell .stack-heading {
   position: relative;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
 }
@@ -33,51 +33,76 @@
   min-width: 0;
   flex: 1;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   align-items: flex-start;
 }
 .stack-game-shell .stack-intro h1 {
-  font-size: clamp(20px, 2.2vw, 28px);
+  font-size: clamp(34px, 4.4vw, 56px);
   line-height: 1.15;
   letter-spacing: -0.03em;
-  white-space: nowrap;
-  margin: 0;
+  margin: 16px 0;
   padding: 0;
 }
 .stack-game-shell .stack-intro > div {
   display: flex;
-  gap: 6px;
-  align-items: baseline;
-  flex-wrap: nowrap;
+  gap: 8px 12px;
+  align-items: center;
+  flex-wrap: wrap;
   max-width: 100%;
 }
-.stack-game-shell .stack-intro .streak-pill,
+.stack-game-shell .stack-intro .stack-puzzle-pill,
 .stack-game-shell .date-label {
   padding: 0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   border-radius: 0;
   background: transparent;
   white-space: nowrap;
 }
 .stack-game-shell .date-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--text);
+  white-space: normal;
+}
+.stack-game-shell .stack-practice-seed {
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.stack-game-shell .stack-intro .stack-puzzle-pill {
+  padding: 8px 16px;
+  background: var(--bg-raised);
+  color: var(--gold-text);
+  border-radius: 999px;
+}
+.stack-game-shell .stack-intro .stack-title-row {
+  flex-wrap: nowrap;
+  gap: 16px;
 }
 .stack-game-shell .stack-intro .lede {
   display: none;
 }
-.stack-game-shell .stack-help-button,
-.stack-game-shell .stack-options > summary {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
+.stack-game-shell .stack-heading .stack-help-button {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
   padding: 0;
   margin: 0;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 600;
 }
 .stack-game-shell .stack-help-label {
   display: none;
+}
+.stack-game-shell .stack-help-button > span:first-child {
+  width: auto;
+  height: auto;
+  border: 0;
+  font-size: inherit;
 }
 .stack-game-shell .stack-victory-reopen {
   margin: 0;
@@ -93,26 +118,21 @@
   display: none;
 }
 .stack-options-panel {
-  position: absolute;
-  z-index: 10;
-  top: calc(100% + 8px);
-  right: 0;
-  width: min(460px, 100%);
-  max-height: calc(
-    100dvh - 160px - env(safe-area-inset-top, 0px) -
-      env(safe-area-inset-bottom, 0px)
-  );
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--bg-surface);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.16);
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 760px;
 }
 .stack-game-shell .stack-options-panel nav[aria-label="Game mode"] {
   display: flex;
   gap: 8px;
+}
+.stack-game-shell .stack-heading nav[aria-label="Game mode"] {
+  display: flex;
+  margin: 0;
+}
+.stack-game-shell .stack-heading nav[aria-label="Game mode"] > a {
+  flex: 0 1 auto;
 }
 .stack-game-shell .stack-options-panel .button-row > *,
 .stack-game-shell .stack-options-panel nav[aria-label="Game mode"] > a {
@@ -128,12 +148,25 @@
   gap: 8px;
 }
 .stack-game-shell .stack-difficulties a {
-  padding: 12px 6px;
+  padding: 12px;
 }
 .stack-game-shell .stack-difficulties strong {
   font-size: 13px;
 }
+.stack-game-shell .stack-difficulties .stack-difficulty-dots {
+  align-self: center;
+  color: inherit;
+  font-size: 8px;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
 .stack-game-shell .stack-layout {
+  height: calc(
+    100dvh - var(--stack-site-header-height, 75px) -
+      max(44px, calc(clamp(20px, 2.2vw, 28px) * 1.15 + 18px)) -
+      var(--stack-page-space) * 2 - var(--stack-page-gap) -
+      env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
   min-width: 0;
   min-height: 0;
   margin: 0;
@@ -319,6 +352,10 @@
 .stack-game-shell .piece-card.selected {
   outline-offset: -2px;
 }
+.stack-game-shell .piece-card.placed {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
 .stack-game-shell .piece-card:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: -3px;
@@ -364,6 +401,10 @@
 }
 /* Preserve the existing compact desktop layout in short windows. */
 @media (min-width: 900px) and (orientation: landscape) and (max-height: 600px) {
+  .stack-game-shell .stack-primary {
+    --stack-page-space: 4px;
+    --stack-page-gap: 4px;
+  }
   .stack-game-shell {
     --stack-sidebar-width: clamp(260px, 42vw, 380px);
   }
@@ -372,7 +413,7 @@
     gap: 8px;
   }
   .stack-game-shell .stack-page {
-    padding-block: 4px;
+    padding-block: var(--page-gutter) 4px;
     gap: 4px;
   }
   .stack-game-shell .stat-row > div {
