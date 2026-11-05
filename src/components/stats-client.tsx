@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useViewer } from "./auth/viewer-provider";
+import { StatsSkeleton } from "./stats-skeleton";
 import {
   localResults,
   RESULTS_CHANGED,
@@ -138,6 +139,7 @@ export function StatsClient() {
       </section>
     );
   }
+  if (loading) return <StatsSkeleton />;
   return (
     <section className="container stats-page">
       <div className="stats-intro">
@@ -180,7 +182,6 @@ export function StatsClient() {
           </button>
         </div>
       )}
-      {loading && <p role="status">Loading your history...</p>}
       <div className="stats-overview" aria-label="Overall statistics">
         <article className="panel">
           <span className="eyebrow">COMPLETED</span>
