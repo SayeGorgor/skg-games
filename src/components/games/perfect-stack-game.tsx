@@ -558,6 +558,15 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
                   (d) => {
                     const config = STACK_DIFFICULTIES[d];
                     const result = progress?.difficulties[d];
+                    const completed =
+                      puzzle.mode === "daily"
+                        ? Boolean(result)
+                        : puzzle.difficulty === d && solved;
+                    const stars = completed
+                      ? puzzle.mode === "daily"
+                        ? result!.stars
+                        : getStackStars(moves, puzzle.pieceCount)
+                      : 0;
                     return (
                       <Link
                         aria-current={
@@ -569,19 +578,53 @@ function PerfectStackSession({ puzzle }: { puzzle: StackPuzzle }) {
                         scroll={false}
                       >
                         <strong>
-                          {d === "small" ? "EASY" : d.toUpperCase()}
-                          <span
-                            className="stack-difficulty-dots"
-                            aria-hidden="true"
-                          >
-                            {"●".repeat(
-                              d === "small" ? 1 : d === "medium" ? 2 : 3,
-                            )}
-                          </span>
-                          {puzzle.mode === "daily" && result && (
-                            <span className="stack-difficulty-status">
-                              {"★".repeat(result.stars)}
+                          <span className="stack-difficulty-label">
+                            {d === "small" ? "EASY" : d.toUpperCase()}
+                            <span
+                              className={`stack-difficulty-indicator${completed ? " is-complete" : ""}`}
+                              role="img"
+                              aria-label={
+                                completed ? "Completed" : "Not completed"
+                              }
+                            >
+                              {completed ? (
+                                "✓"
+                              ) : (
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 16 16"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  aria-hidden="true"
+                                >
+                                  <circle
+                                    cx="8"
+                                    cy="8"
+                                    r="3.5"
+                                    strokeWidth="1.4"
+                                  />
+                                </svg>
+                              )}
                             </span>
+                          </span>
+                          {completed && (
+                            <>
+                              <span
+                                className="stack-difficulty-divider"
+                                aria-hidden="true"
+                              >
+                                ·
+                              </span>
+                              <span
+                                className="stack-difficulty-stars"
+                                role="img"
+                                aria-label={`${stars} stars`}
+                              >
+                                {"★".repeat(stars)}
+                              </span>
+                            </>
                           )}
                         </strong>
                         <span>

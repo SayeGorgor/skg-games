@@ -151,14 +151,48 @@
   padding: 12px;
 }
 .stack-game-shell .stack-difficulties strong {
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
+  line-height: 1.25;
 }
-.stack-game-shell .stack-difficulties .stack-difficulty-dots {
-  align-self: center;
+.stack-game-shell .stack-difficulties .stack-difficulty-label {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 3px;
   color: inherit;
-  font-size: 8px;
-  letter-spacing: 2px;
+  font: inherit;
   white-space: nowrap;
+}
+.stack-game-shell .stack-difficulties .stack-difficulty-divider {
+  color: var(--muted);
+  font: inherit;
+}
+.stack-game-shell .stack-difficulties .stack-difficulty-stars {
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.stack-game-shell .stack-difficulties .stack-difficulty-indicator {
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  align-self: center;
+  transform: translateY(-1px);
+  color: inherit;
+  line-height: 1;
+}
+.stack-game-shell .stack-difficulties .stack-difficulty-indicator.is-complete {
+  display: inline;
+  width: auto;
+  height: auto;
+  align-self: baseline;
+  transform: none;
+  font-size: 14px;
 }
 .stack-game-shell .stack-layout {
   height: calc(
