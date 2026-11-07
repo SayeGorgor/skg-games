@@ -118,6 +118,32 @@ export function oriented(piece: StackPiece, rotation: number) {
   return cells;
 }
 export const getDragAnchor = (cells: Cell[]): Cell => normalizeCells(cells)[0];
+// Include half of each grid gap in the neighboring cell's hit area. Rounded
+// button corners and gaps must not interrupt an otherwise valid board drag.
+export function getStackDragCell(
+  x: number,
+  y: number,
+  grid: {
+    left: number;
+    top: number;
+    cellWidth: number;
+    cellHeight: number;
+    columnGap: number;
+    rowGap: number;
+    rows: number;
+    cols: number;
+  },
+): Cell | null {
+  const col = Math.floor(
+    (x - grid.left + grid.columnGap / 2) / (grid.cellWidth + grid.columnGap),
+  );
+  const row = Math.floor(
+    (y - grid.top + grid.rowGap / 2) / (grid.cellHeight + grid.rowGap),
+  );
+  return row >= 0 && row < grid.rows && col >= 0 && col < grid.cols
+    ? [row, col]
+    : null;
+}
 export function placeCells(
   piece: StackPiece,
   anchor: Cell,

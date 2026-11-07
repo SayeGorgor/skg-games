@@ -37,6 +37,7 @@ import {
 import {
   oriented,
   getDragAnchor,
+  getStackDragCell,
   placeCells,
   validPlacement,
   isStackSolved,
@@ -377,20 +378,33 @@ function PerfectStackSession({
     };
   }
 
+  function getBoardCell(
+    clientX: number,
+    clientY: number,
+    metrics: DragMetrics,
+  ) {
+    const firstCell = boardRef.current
+      ?.querySelector<HTMLElement>('[data-stack-cell="true"]')
+      ?.getBoundingClientRect();
+    return firstCell
+      ? getStackDragCell(clientX, clientY, {
+          ...metrics,
+          left: firstCell.left,
+          top: firstCell.top,
+          rows: puzzle.rows,
+          cols: puzzle.cols,
+        })
+      : null;
+  }
+
   function projectDrag(current: DragState, clientX: number, clientY: number) {
     const active =
       current.active ||
       Math.hypot(clientX - current.originX, clientY - current.originY) >=
         DRAG_THRESHOLD;
-    const hit = active
-      ? document
-          .elementFromPoint(clientX, clientY)
-          ?.closest<HTMLElement>('[data-stack-cell="true"]')
+    const anchor = active
+      ? getBoardCell(clientX, clientY, current.metrics)
       : null;
-    const anchor: Cell | null =
-      hit && boardRef.current?.contains(hit)
-        ? [Number(hit.dataset.row), Number(hit.dataset.col)]
-        : null;
     const piece = puzzle.pieces.find((p) => p.id === current.pieceId)!;
     const cells = anchor
       ? placeCells(piece, anchor, rotations[piece.id] ?? 0, current.pieceAnchor)
@@ -406,15 +420,25 @@ function PerfectStackSession({
     };
   }
 
-  function startDrag(event: PointerEvent<HTMLButtonElement>, pieceId: string) {
+  function startDrag(
+    event: PointerEvent<HTMLElement>,
+    pieceId: string,
+    boardCell?: Cell,
+  ) {
     if (solved || !event.isPrimary || event.button !== 0 || dragRef.current)
       return;
     const metrics = getBoardDragMetrics();
     const piece = puzzle.pieces.find((p) => p.id === pieceId);
     if (!metrics || !piece) return;
+    // Keep the browser's native selection/drag gesture from cancelling ours.
+    event.preventDefault();
     suppressClickRef.current = false;
     setSelected(pieceId);
-    event.currentTarget.setPointerCapture(event.pointerId);
+    const captureTarget = boardCell
+      ? ((event.target as Element).closest('[data-stack-cell="true"]') ??
+        event.currentTarget)
+      : event.currentTarget;
+    captureTarget.setPointerCapture(event.pointerId);
     updateDrag({
       pieceId,
       pointerId: event.pointerId,
@@ -425,16 +449,12 @@ function PerfectStackSession({
       active: false,
       anchor: null,
       pieceAnchor:
-        event.currentTarget.dataset.stackCell &&
-        placements.find((p) => p.pieceId === pieceId)
+        boardCell && placements.find((p) => p.pieceId === pieceId)
           ? (() => {
               const placement = placements.find((p) => p.pieceId === pieceId)!;
               const minR = Math.min(...placement.cells.map((c) => c[0])),
                 minC = Math.min(...placement.cells.map((c) => c[1]));
-              return [
-                Number(event.currentTarget.dataset.row) - minR,
-                Number(event.currentTarget.dataset.col) - minC,
-              ] as Cell;
+              return [boardCell[0] - minR, boardCell[1] - minC] as Cell;
             })()
           : getDragAnchor(oriented(piece, rotations[pieceId] ?? 0)),
       metrics,
@@ -443,13 +463,13 @@ function PerfectStackSession({
     });
   }
 
-  function moveDrag(event: PointerEvent<HTMLButtonElement>) {
+  function moveDrag(event: PointerEvent<HTMLElement>) {
     const current = dragRef.current;
     if (!current || current.pointerId !== event.pointerId) return;
     updateDrag(projectDrag(current, event.clientX, event.clientY));
   }
 
-  function endDrag(event: PointerEvent<HTMLButtonElement>, cancelled = false) {
+  function endDrag(event: PointerEvent<HTMLElement>, cancelled = false) {
     const current = dragRef.current;
     if (!current || current.pointerId !== event.pointerId) return;
     // Hit-test again on release, including any scrolling since the last move.
@@ -898,6 +918,20 @@ function PerfectStackSession({
                   <div
                     className="stack-grid"
                     ref={boardRef}
+                    onPointerDown={(event) => {
+                      const metrics = getBoardDragMetrics();
+                      const cell =
+                        metrics &&
+                        getBoardCell(event.clientX, event.clientY, metrics);
+                      const pid = cell && placedMap.get(key(cell));
+                      if (pid && cell) startDrag(event, pid, cell);
+                      else if (!dragRef.current)
+                        suppressClickRef.current = false;
+                    }}
+                    onPointerMove={moveDrag}
+                    onPointerUp={(event) => endDrag(event)}
+                    onPointerCancel={(event) => endDrag(event, true)}
+                    onLostPointerCapture={(event) => endDrag(event, true)}
                     style={
                       {
                         "--board-rows": puzzle.rows,
@@ -936,17 +970,6 @@ function PerfectStackSession({
                                     "--drag-preview-color": `var(--${draggingPiece.color})`,
                                   } as CSSProperties)
                                 : undefined
-                            }
-                            onPointerDown={(event) => {
-                              if (pid) startDrag(event, pid);
-                              else if (!dragRef.current)
-                                suppressClickRef.current = false;
-                            }}
-                            onPointerMove={moveDrag}
-                            onPointerUp={(event) => endDrag(event)}
-                            onPointerCancel={(event) => endDrag(event, true)}
-                            onLostPointerCapture={(event) =>
-                              endDrag(event, true)
                             }
                             onClick={(event) => {
                               if (
