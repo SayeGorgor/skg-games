@@ -21,7 +21,7 @@ Browser
                │
        ┌───────┼────────┐
        ▼       ▼        ▼
-   Neon Auth  Stripe   Analytics
+   Neon Auth  Stripe*  Analytics
    (adapter)  Plus     / Sentry
 ```
 
@@ -58,3 +58,6 @@ The script also checks authenticated client controls using a mocked viewer respo
 - Anonymous play is first-class. A generated anonymous UUID can later be claimed by an authenticated user.
 - Neon Auth remains behind `lib/auth/identity.ts` so the game layer is vendor-agnostic.
 - Ads are modeled as placements/configuration. The ad network should remain the source of truth for impression/revenue reporting.
+
+
+*Stripe is planned; this diagram shows an intended boundary, not connected billing. See [current subscription status](AUTHENTICATION.md#planned-subscriptions-and-advertising).

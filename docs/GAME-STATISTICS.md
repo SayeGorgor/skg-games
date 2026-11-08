@@ -1,4 +1,4 @@
-﻿# Game statistics and history
+# Game statistics and history
 
 `/stats` is public: guests see results saved in this browser, while authenticated
 players see their own account history. The header Stats link and Account page link
@@ -24,7 +24,7 @@ both lead here. The header streak now uses actual saved daily results.
 - Daily Stack submissions load the puzzle for its original date, supporting delayed
   offline uploads after midnight. Practice reuses seeded generation. Board geometry
   and stars are validated/recomputed server-side. Alibi outcomes come from the
-  currently playable bundled case, rather than the supplied solved flag.
+  authoritative challenge for the original date, rather than the supplied solved flag.
 - Moves and durations are self-reported personal statistics. A validated board or
   accusation is not evidence of a tamper-proof timer or competitive score. Legacy
   Stack metrics without a saved board remain explicitly unverified.

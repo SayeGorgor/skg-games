@@ -34,10 +34,10 @@ origin(s) to Neon's trusted domains before deployment; no production domain is
 assumed in code. Keep callbacks on those origins. Test cancellation/failure,
 new/existing Google users, and both purchase and standard intents.
 
-SDK dependency overrides patch Better Auth/Core/OAuth Provider to 1.7.14,
-Better Fetch to 1.3.3, Better Call to 1.4.4, and Zod to 4.6.7, addressing
-advisories in the SDK's exact dependency pins. Recheck these overrides when
-upgrading Neon. No custom Better Auth server or database adapter runs in SKG.
+Dependency pins/overrides are defined in [package.json](../package.json) and the
+lockfile. Historical reports name versions that differ from the current manifest;
+their dependency-audit results are not a current security assessment. No custom
+Better Auth server or database adapter runs in SKG.
 
 ## Routes and flows
 
@@ -90,8 +90,10 @@ DB/entitlement errors fail closed to free. Client context receives only this
 server result; localStorage and request parameters cannot grant membership.
 Ad components read that result. Logout reloads public state.
 
-Game completion uses `getIdentity()`; an authenticated user ID always wins over
-browser-supplied fields. Anonymous completion retains the existing browser UUID.
+New completion uploads use `getViewer()` and require an authenticated session,
+same-origin POST and account-scope header matching the session. Guest completions
+queue locally; the current endpoint does not accept anonymous database writes.
+Legacy anonymous rows and pending guest groups retain the claim boundary below.
 The browser ID is an unguessable bearer identifier, not an independently verified
 device identity. Claim requests require a session, same-origin POST, and a valid
 UUID; they accept no user ID. Claim ownership is permanently reserved by
@@ -128,13 +130,28 @@ to verify anonymous play after integration. Real Google consent, email delivery,
 verified sessions, and payment entitlements require the configured Neon branch
 and provider console checks described above.
 
-Validation in this change: 41 unit tests, lint, and production build passed.
+Historical implementation evidence (not rerun for documentation consolidation):
+41 unit tests, lint, and production build passed at that time.
 Auth browser checks cover 320/390/768/1024/1440px in both themes, account guards,
 purchase intent, malicious return paths, rejected anonymous/cross-origin claims,
 password confirmation, provider errors, Google callback payloads, unfinished-game
 handoffs, welcome-dialog sizing/Escape/URL consumption, and sign-out storage.
 The Stack/Alibi persistence scripts also pass. Live provider signup/sign-in and
 real PostgreSQL claim concurrency are not simulated by the unit query-contract
-tests and remain deployment verification steps. The dependency audit retains
-low/moderate transitive advisories; no high/critical findings remain after the
-targeted SDK overrides (no forced dependency downgrade was applied).
+tests and remain deployment verification steps. Dependency vulnerability status must be checked against the current lockfile;
+this documentation review makes no current dependency-security claim.
+
+
+## Current account-backed progress
+
+The [completion endpoint](../src/app/api/games/complete/route.ts) validates bounded results and derives identity only from the active viewer. The account-scope header detects switching; it is not authentication. Stack solutions are checked against authoritative Daily/seeded Practice puzzles and stars recomputed. Alibi loads the original dated challenge, validates its number/suspect and derives correctness server-side. Times/move counts remain personal metrics, not tamper-proof competitive scores.
+
+[Result queues and statistics](GAME-STATISTICS.md) preserve local completions, bind pending guest groups before upload and retry interrupted acknowledgments idempotently. Logout preserves records while isolating account-owned history. [Stack synchronization](PERFECT-STACK-ACCOUNT-SYNC.md) restores verified completed boards across devices; in-progress boards remain local. A legacy result without geometry is not given an invented board or verification claim.
+
+## Planned subscriptions and advertising
+
+This replaces the earlier rollout checklist. Neon authentication is implemented. Stripe Checkout, signed subscription webhooks and payment collection are planned, not shipped. Schema fields and Plus routes do not prove connected billing.
+
+A future integration must create Checkout Sessions server-side, process verified signed webhooks, persist customer/subscription state and derive entitlement server-side. Never grant Plus from a success redirect or client field; independently authorize a purchase endpoint with `getViewer()`.
+
+`NEXT_PUBLIC_ADS_ENABLED` is a public build-time switch; only exact `true` enables advertising/Plus presentation. When off, promotion is suppressed and Plus routes redirect according to session state. Existing subscription records are not deleted. See [architecture](ARCHITECTURE.md) and [responsive guidance](RESPONSIVE.md).
