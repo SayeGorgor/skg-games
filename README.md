@@ -45,54 +45,6 @@ A spatial puzzle where every piece must fit into the board. Drag, rotate, and ar
 
 **Server-side persistence and verification.** Drizzle models and application API routes support challenge retrieval and completion persistence, with game-specific validation and tests for important state transitions.
 
-## Project Structure
-
-```text
-skg-games/
-├── src/               # Next.js app, components, game logic and server code
-├── drizzle/           # Database migrations
-├── scripts/           # Content generation and verification utilities
-├── docs/              # Implementation and test notes
-├── public/            # Static assets
-└── package.json
-```
-
-## Run Locally
-
-**Requirements:** Node.js and npm. Database-backed features additionally require a properly configured development Neon/PostgreSQL environment; authentication requires a development Neon Auth configuration.
-
-```bash
-git clone https://github.com/SayeGorgor/skg-games.git
-cd skg-games
-npm ci
-```
-
-If an `.env.example` file is present, use it as a reference to create `.env.local` with your **own development credentials**. Not every production feature is available without the corresponding external service.
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Quality checks
-
-```bash
-npm test
-npm run lint
-npm run build
-```
-
-For a **disposable development database only**, the repository also includes Drizzle commands:
-
-```bash
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-```
-
-Review the migration and seeding documentation in [`docs/`](./docs/) before running commands against any persistent database. Never reuse production credentials for local experimentation.
-
 ## Daily Challenge Publishing
 
 The application includes a protected, idempotent endpoint at `/api/cron/publish-daily`. Its deployment schedule accounts for Eastern Time midnight during both standard time and daylight saving time. Protected invocation requires a server-side `CRON_SECRET`; do not expose that value in client-side code.
