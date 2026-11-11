@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { getViewer } from "@/lib/auth/viewer";
 import { readAccountHistory } from "@/lib/results/server";
 import { GAME_NAMES, summarize } from "@/lib/results/shared";
@@ -37,6 +38,12 @@ export async function GET(request: Request) {
       { headers },
     );
   } catch {
+    Sentry.logger.error("Account history retrieval failed", {
+      operation: "read_history",
+      feature: "stats",
+      outcome: "unexpected_failure",
+      status_code: 503,
+    });
     return Response.json(
       {
         error:

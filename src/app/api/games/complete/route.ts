@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { recordAttempt } from "@/lib/db/attempts";
 import { getViewer } from "@/lib/auth/viewer";
@@ -41,6 +42,17 @@ export async function POST(request: Request) {
       { error: "Invalid completion payload" },
       { status: 400 },
     );
+  const started = performance.now();
+  // Only validated enum values; never spread the completion payload into logs.
+  const attributes = {
+    feature: "game_completion",
+    game_slug: body.gameSlug,
+    mode: body.mode,
+    ...(body.gameSlug === "perfect-stack"
+      ? { difficulty: body.difficulty }
+      : {}),
+    status_code: 503,
+  };
   let verified = false;
   if (body.gameSlug === "perfect-stack") {
     if (body.mode === "practice" && !validPublicSeed(body.puzzleSeed!))
@@ -73,6 +85,12 @@ export async function POST(request: Request) {
         body.result.stars = getStackStars(body.moves!, puzzle.pieceCount);
         verified = true;
       } catch {
+        Sentry.logger.warn("Completion puzzle unavailable", {
+          ...attributes,
+          operation: "load_puzzle",
+          outcome: "retryable_failure",
+          duration_ms: Math.round(performance.now() - started),
+        });
         return NextResponse.json(
           { error: "Puzzle unavailable; retry later" },
           { status: 503 },
@@ -85,6 +103,12 @@ export async function POST(request: Request) {
     try {
       alibi = await getDailyAlibiChallenge(body.challengeDate!);
     } catch {
+      Sentry.logger.warn("Completion case unavailable", {
+        ...attributes,
+        operation: "load_puzzle",
+        outcome: "retryable_failure",
+        duration_ms: Math.round(performance.now() - started),
+      });
       return NextResponse.json(
         { error: "Case unavailable; retry later" },
         { status: 503 },
@@ -108,11 +132,24 @@ export async function POST(request: Request) {
       userId: viewer.userId,
       verified,
     });
+    if (!persisted)
+      Sentry.logger.warn("Completion persistence deferred", {
+        ...attributes,
+        operation: "record_attempt",
+        outcome: "retryable_failure",
+        duration_ms: Math.round(performance.now() - started),
+      });
     return NextResponse.json(
       { ok: persisted, persisted },
       { status: persisted ? 200 : 503 },
     );
   } catch {
+    Sentry.logger.error("Completion persistence failed", {
+      ...attributes,
+      operation: "record_attempt",
+      outcome: "unexpected_failure",
+      duration_ms: Math.round(performance.now() - started),
+    });
     return NextResponse.json(
       {
         error: "Results remain saved in this browser; retry later",

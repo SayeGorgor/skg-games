@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import "server-only";
 import { sql, eq } from "drizzle-orm";
 import { getDb } from "../db";
@@ -43,6 +44,12 @@ export async function claimAnonymousProgress(
       .from(anonymousClaims)
       .where(eq(anonymousClaims.anonymousId, anonymousId)),
   ]);
+  if (moved.length > 0)
+    Sentry.logger.info("Anonymous progress transferred", {
+      operation: "claim_progress",
+      feature: "anonymous_progress",
+      outcome: "success",
+    });
   return {
     persisted: true,
     claimed: owners[0]?.userId === userId,

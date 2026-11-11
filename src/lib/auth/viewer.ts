@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import "server-only";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
@@ -43,34 +44,24 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     premium: false,
   };
   if (!auth) return empty;
-  // const response = await auth.getSession().catch(() => null);
-  // const session = response?.data,
-  //   error = response?.error;
-  // if (error || !session?.user) return empty;
-
-  
-  const response = await auth.getSession().catch((err: unknown) => {
-    console.error(
-      "[SKG Auth] getSession failed:",
-      err instanceof Error ? err.message : "Unknown error"
-    );
+  const response = await auth.getSession().catch(() => {
+    Sentry.logger.error("Session lookup failed", {
+      operation: "get_session",
+      feature: "auth",
+      outcome: "unexpected_failure",
+    });
     return null;
   });
-
   if (response?.error) {
-    console.error("[SKG Auth] Session error:", {
-      code: response.error.code,
-      message: response.error.message,
+    Sentry.logger.warn("Session lookup returned an error", {
+      operation: "get_session",
+      feature: "auth",
+      outcome: "failure",
     });
   }
-
-  if (!response?.data?.user) {
-    console.warn("[SKG Auth] No authenticated user found.");
-    return empty;
-  }
+  if (!response?.data?.user) return empty;
 
   const session = response.data;
-
 
   const user = session.user;
   let premium = false;
@@ -78,6 +69,11 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     await ensureProfileForAuthUser(user);
     premium = await getPremiumEntitlement(user.id);
   } catch {
+    Sentry.logger.error("Account entitlement lookup failed", {
+      operation: "get_entitlement",
+      feature: "auth",
+      outcome: "unexpected_failure",
+    });
     /* Fail closed on entitlement; free play survives a database outage. */
   }
   return {

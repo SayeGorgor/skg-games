@@ -11,3 +11,6 @@ artifacts/
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Local operational notes and task results
+/developer-docs/

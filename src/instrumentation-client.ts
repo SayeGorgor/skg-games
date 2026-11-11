@@ -1,7 +1,9 @@
+import { beforeSendLog } from "./lib/observability/logs";
 
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
+  beforeSendLog,
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   // Reduce production performance monitoring volume.

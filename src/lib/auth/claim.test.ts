@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+vi.mock("@sentry/nextjs", () => ({ logger: { info: vi.fn() } }));
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "../db/schema";
@@ -44,6 +46,14 @@ describe("transactional anonymous claim", () => {
       claimed: true,
       associated: 0,
     });
+    expect(Sentry.logger.info).toHaveBeenCalledExactlyOnceWith(
+      "Anonymous progress transferred",
+      {
+        operation: "claim_progress",
+        feature: "anonymous_progress",
+        outcome: "success",
+      },
+    );
     const queries = batch.mock.calls[0][0];
     expect(queries).toHaveLength(3);
     const compiled = queries.map((query) =>
