@@ -1,3 +1,4 @@
+import { recordPublishing } from "@/lib/observability/metrics";
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { publishDueChallenges } from "@/lib/db/challenges";
@@ -7,10 +8,7 @@ export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
 
   if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const started = performance.now();
@@ -18,6 +16,7 @@ export async function GET(request: Request) {
   try {
     count = await publishDueChallenges();
   } catch (error) {
+    recordPublishing("error", performance.now() - started);
     Sentry.logger.error("Daily puzzle publishing failed", {
       operation: "publish_daily",
       feature: "daily_puzzles",
@@ -28,6 +27,7 @@ export async function GET(request: Request) {
     // Next.js onRequestError reports this exception; do not capture it again.
     throw error;
   }
+  recordPublishing("success", performance.now() - started, count);
   Sentry.logger.info("Daily puzzle publishing completed", {
     operation: "publish_daily",
     feature: "daily_puzzles",

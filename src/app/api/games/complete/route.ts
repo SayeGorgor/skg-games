@@ -1,3 +1,9 @@
+import {
+  countMetric,
+  metricNames,
+  measurePersistence,
+  type GameMetricAttributes,
+} from "@/lib/observability/metrics";
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { recordAttempt } from "@/lib/db/attempts";
@@ -53,6 +59,13 @@ export async function POST(request: Request) {
       : {}),
     status_code: 503,
   };
+  const gameMetrics: GameMetricAttributes = {
+    game_slug: body.gameSlug,
+    mode: body.mode,
+    ...(body.gameSlug === "perfect-stack"
+      ? { difficulty: body.difficulty }
+      : {}),
+  };
   let verified = false;
   if (body.gameSlug === "perfect-stack") {
     if (body.mode === "practice" && !validPublicSeed(body.puzzleSeed!))
@@ -85,6 +98,12 @@ export async function POST(request: Request) {
         body.result.stars = getStackStars(body.moves!, puzzle.pieceCount);
         verified = true;
       } catch {
+        countMetric(metricNames.puzzleLoadFailures, {
+          ...gameMetrics,
+          feature: "game_completion",
+          operation: "load_puzzle",
+          outcome: "error",
+        });
         Sentry.logger.warn("Completion puzzle unavailable", {
           ...attributes,
           operation: "load_puzzle",
@@ -103,6 +122,12 @@ export async function POST(request: Request) {
     try {
       alibi = await getDailyAlibiChallenge(body.challengeDate!);
     } catch {
+      countMetric(metricNames.puzzleLoadFailures, {
+        ...gameMetrics,
+        feature: "game_completion",
+        operation: "load_puzzle",
+        outcome: "error",
+      });
       Sentry.logger.warn("Completion case unavailable", {
         ...attributes,
         operation: "load_puzzle",
@@ -123,7 +148,7 @@ export async function POST(request: Request) {
     verified = true;
   }
   try {
-    const persisted = await recordAttempt({
+    const input = {
       ...body,
       clientEventId: body.eventId,
       resultKey: resultKey(body),
@@ -131,7 +156,11 @@ export async function POST(request: Request) {
       anonymousId: null,
       userId: viewer.userId,
       verified,
-    });
+    };
+    const persisted = await measurePersistence(
+      () => recordAttempt(input),
+      gameMetrics,
+    );
     if (!persisted)
       Sentry.logger.warn("Completion persistence deferred", {
         ...attributes,

@@ -1,3 +1,4 @@
+import { countMetric, metricNames } from "@/lib/observability/metrics";
 import * as Sentry from "@sentry/nextjs";
 import { getViewer } from "@/lib/auth/viewer";
 import { readAccountHistory } from "@/lib/results/server";
@@ -38,6 +39,11 @@ export async function GET(request: Request) {
       { headers },
     );
   } catch {
+    countMetric(metricNames.historyReadFailures, {
+      feature: "stats",
+      operation: "read_history",
+      outcome: "error",
+    });
     Sentry.logger.error("Account history retrieval failed", {
       operation: "read_history",
       feature: "stats",

@@ -1,4 +1,5 @@
 ﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/viewer", () => ({ getViewer: vi.fn() }));
 vi.mock("@/lib/db/attempts", () => ({ recordAttempt: vi.fn() }));
 vi.mock("@/lib/games/daily-alibi/daily", () => ({

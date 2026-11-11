@@ -1,3 +1,4 @@
+import { countMetric, metricNames } from "@/lib/observability/metrics";
 import * as Sentry from "@sentry/nextjs";
 import { getViewer } from "@/lib/auth/viewer";
 import { claimAnonymousProgress } from "@/lib/auth/claim";
@@ -23,6 +24,11 @@ export async function POST(request: Request) {
       await claimAnonymousProgress(viewer.userId, body.anonymousId),
     );
   } catch {
+    countMetric(metricNames.claimFailures, {
+      feature: "anonymous_progress",
+      operation: "claim_progress",
+      outcome: "error",
+    });
     Sentry.logger.error("Anonymous progress claim failed", {
       operation: "claim_progress",
       feature: "anonymous_progress",
