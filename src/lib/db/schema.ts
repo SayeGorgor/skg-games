@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   index,
   integer,
@@ -214,6 +216,7 @@ export const userGameStats = pgTable(
 export const userProfiles = pgTable("user_profiles", {
   // Same value as the Neon Auth user id; no FK into the managed neon_auth schema.
   userId: text("user_id").primaryKey(),
+  email: text("email"),
   displayName: text("display_name"),
   preferredTheme: text("preferred_theme").notNull().default("system"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -269,3 +272,59 @@ export const publishRuns = pgTable("publish_runs", {
   publishedCount: integer("published_count").notNull().default(0),
   notes: text("notes"),
 });
+
+// Application authorization only; Neon Auth remains the identity authority.
+export const appRole = pgEnum("app_role", [
+  "owner",
+  "admin",
+  "analyst",
+  "player",
+]);
+export const userRoles = pgTable("user_roles", {
+  userId: text("user_id").primaryKey(),
+  role: appRole("role").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// Restricted audit store. No application update/delete path or public policy.
+export const roleAssignmentAudit = pgTable(
+  "role_assignment_audit",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    actorType: text("actor_type").notNull(),
+    actorUserId: text("actor_user_id"),
+    operatorReference: text("operator_reference"),
+    targetUserId: text("target_user_id").notNull(),
+    previousRole: appRole("previous_role"),
+    newRole: appRole("new_role").notNull(),
+    action: text("action").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check(
+      "role_audit_operator_reference_check",
+      sql`${t.operatorReference} IS NULL OR ${t.operatorReference} ~ '^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$'`,
+    ),
+    check(
+      "role_audit_source_check",
+      sql`(
+    ${t.actorType} = 'system_bootstrap' AND ${t.actorUserId} IS NULL
+    AND ${t.operatorReference} IS NOT NULL AND ${t.action} = 'owner_bootstrap'
+    AND ${t.newRole} = 'owner' AND (${t.previousRole} IS NULL OR ${t.previousRole} = 'player')
+  ) OR (
+    ${t.actorType} = 'authenticated_admin' AND ${t.actorUserId} IS NOT NULL
+    AND ${t.action} = 'role_assignment'
+  )`,
+    ),
+    uniqueIndex("role_audit_initial_owner_uq")
+      .on(t.action)
+      .where(sql`${t.action} = 'owner_bootstrap'`),
+  ],
+).enableRLS();

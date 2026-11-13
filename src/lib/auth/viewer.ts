@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import "server-only";
 import { cache } from "react";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { auth } from "./server";
 import { getDb } from "@/lib/db";
 import { subscriptions, userProfiles } from "@/lib/db/schema";
@@ -17,13 +17,25 @@ export type Viewer = {
 export async function ensureProfileForAuthUser(user: {
   id: string;
   name?: string | null;
+  email?: string | null;
 }) {
   const db = getDb();
   if (!db) return;
+  // Only called with the trusted server-side Auth user. Missing/blank email
+  // must not erase a previously synchronized address.
+  const email = user.email?.trim() || null;
   await db
     .insert(userProfiles)
-    .values({ userId: user.id, displayName: user.name?.slice(0, 120) || null })
-    .onConflictDoNothing();
+    .values({
+      userId: user.id,
+      displayName: user.name?.slice(0, 120) || null,
+      email,
+    })
+    .onConflictDoUpdate({
+      target: userProfiles.userId,
+      set: { email: sql`excluded.email`, updatedAt: new Date() },
+      setWhere: sql`excluded.email IS NOT NULL AND ${userProfiles.email} IS DISTINCT FROM excluded.email`,
+    });
 }
 export async function getPremiumEntitlement(userId: string) {
   const db = getDb();

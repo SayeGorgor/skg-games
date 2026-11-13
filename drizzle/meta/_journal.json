@@ -36,6 +36,27 @@
       "when": 1793808993260,
       "tag": "0004_alibi_catalog_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794510944495,
+      "tag": "0005_user_profile_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794515350034,
+      "tag": "0006_application_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794524753941,
+      "tag": "0007_role_assignment_audit",
+      "breakpoints": true
     }
   ]
 }
