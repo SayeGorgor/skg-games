@@ -1,11 +1,24 @@
-import { requireAnalyticsAdmin } from "@/lib/analytics/access";
+import { notFound } from "next/navigation";
+import { getCurrentUserRole } from "@/lib/auth/authorization";
+import { hasPermission } from "@/lib/auth/permissions";
+import { AdminNavigation } from "@/components/admin/navigation";
 
-/** Authorize above the analytics loading boundary, before streaming its shell. */
+/** Shared shell only: each feature layout/page/data boundary authorizes itself. */
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireAnalyticsAdmin();
-  return children;
+  const role = await getCurrentUserRole();
+  if (
+    !hasPermission(role, "analytics:read") &&
+    !hasPermission(role, "users:read")
+  )
+    notFound();
+  return (
+    <>
+      <AdminNavigation role={role} />
+      {children}
+    </>
+  );
 }

@@ -1,16 +1,9 @@
-import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
-
-config({ path: ".env.local" });
-
+// Offline generation only: no runtime or operator credentials.
 export default defineConfig({
   schema: "./src/lib/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
-  dbCredentials: {
-    url:
-      process.env.DATABASE_URL!,
-  },
-  verbose: true,
+  verbose: false,
   strict: true,
 });

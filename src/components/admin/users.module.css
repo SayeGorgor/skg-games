@@ -1,0 +1,311 @@
+.navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-block: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.navigation a {
+  color: var(--text-2);
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+}
+.navigation a:first-child {
+  margin-right: auto;
+  color: var(--text);
+  font-weight: 700;
+  border-color: transparent;
+}
+.navigation a:hover {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+.page {
+  padding-block: clamp(28px, 5vw, 60px);
+  max-width: 1280px;
+}
+.header {
+  margin-bottom: 28px;
+}
+.header h1 {
+  font-size: clamp(32px, 5vw, 48px);
+  margin: 10px 0;
+}
+.header p,
+.muted {
+  color: var(--text-2);
+  line-height: 1.6;
+}
+.directory {
+  min-width: 0;
+}
+.controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 160px 100px auto;
+  align-items: start;
+  gap: 18px;
+  padding: 24px;
+  margin: 0 0 24px;
+  min-width: 0;
+}
+.controls label {
+  display: block;
+  margin-bottom: 9px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.controls input,
+.controls select {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+  background: var(--bg-page);
+  padding: 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  font: inherit;
+}
+.search small {
+  color: var(--text-2);
+  display: block;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.directory button {
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.controls .primary {
+  margin-top: 29px;
+  background: var(--bg-inverse);
+  color: var(--bg-page);
+  padding: 12px 18px;
+  font-weight: 700;
+}
+.directory button:hover:enabled {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+.directory button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.page :focus-visible,
+.navigation a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.results {
+  min-width: 0;
+  padding: 24px;
+}
+.resultHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.resultHeading h2 {
+  font-size: 22px;
+  margin: 0;
+}
+.resultHeading strong {
+  font-size: 14px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--bg-raised);
+}
+.results .muted {
+  font-size: 14px;
+  margin-block: 10px;
+}
+.tableScroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-top: 18px;
+  background: radial-gradient(
+      farthest-side at 100% 50%,
+      var(--border),
+      transparent
+    )
+    right / 10px 100% no-repeat;
+}
+.tableScroll table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.caption {
+  text-align: left;
+  padding: 14px 16px;
+  color: var(--text-2);
+  background: var(--bg-raised);
+}
+.tableScroll th,
+.tableScroll td {
+  padding: 18px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  white-space: nowrap;
+}
+.tableScroll thead th {
+  background: var(--bg-raised);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tableScroll tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.tableScroll tbody tr:hover {
+  background: var(--bg-raised);
+}
+.tableScroll .email,
+.tableScroll .name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 280px;
+  min-width: 150px;
+}
+.tableScroll .email {
+  color: var(--text-2);
+}
+.badge {
+  display: inline-block;
+  border: 1px solid currentColor;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.owner {
+  color: var(--gold-text);
+}
+.admin {
+  color: var(--blue-text);
+}
+.analyst {
+  color: var(--green-text);
+}
+.player {
+  color: var(--text-2);
+}
+.idControl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 250px;
+}
+.idControl code {
+  font-size: 12px;
+}
+.idControl button {
+  font-size: 12px;
+  padding: 5px 9px;
+}
+.idControl input {
+  max-width: 100%;
+  background: var(--bg-surface);
+  color: var(--text);
+}
+.copyStatus {
+  display: block;
+  white-space: normal;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 22px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.pagination > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.empty {
+  padding: 38px 10px;
+  text-align: center;
+}
+.empty h3 {
+  margin-top: 0;
+}
+.notice {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-raised);
+}
+.scrollHint {
+  display: none;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 1000px) {
+  .controls {
+    grid-template-columns: minmax(180px, 1fr) 150px;
+  }
+  .controls .primary {
+    margin-top: 29px;
+  }
+  .scrollHint {
+    display: block;
+  }
+}
+@media (max-width: 550px) {
+  .controls {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+  .controls .primary {
+    margin-top: 0;
+  }
+  .results {
+    padding: 18px;
+  }
+  .navigation {
+    gap: 8px;
+  }
+  .navigation a {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .navigation a:first-child {
+    width: 100%;
+  }
+  .pagination > div {
+    width: 100%;
+  }
+  .pagination button {
+    flex: 1;
+  }
+}

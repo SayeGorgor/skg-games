@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  bigint,
   check,
   date,
   index,
@@ -280,16 +281,23 @@ export const appRole = pgEnum("app_role", [
   "analyst",
   "player",
 ]);
-export const userRoles = pgTable("user_roles", {
-  userId: text("user_id").primaryKey(),
-  role: appRole("role").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const userRoles = pgTable(
+  "user_roles",
+  {
+    userId: text("user_id").primaryKey(),
+    role: appRole("role").notNull(),
+    roleRevision: bigint("role_revision", { mode: "bigint" })
+      .notNull()
+      .default(BigInt(0)),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [check("user_roles_role_revision_check", sql`${t.roleRevision} >= 0`)],
+);
 
 // Restricted audit store. No application update/delete path or public policy.
 export const roleAssignmentAudit = pgTable(

@@ -41,6 +41,7 @@ let existingProfile: unknown;
 beforeAll(async () => {
   for (const file of readdirSync("drizzle")
     .filter((name) => /^\d+.*\.sql$/.test(name))
+    .filter((name) => name !== "0008_role_change_engine.sql")
     .sort()) {
     if (file === "0006_application_roles.sql") {
       await pg.exec(

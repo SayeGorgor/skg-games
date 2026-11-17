@@ -10,7 +10,7 @@ vi.mock("@/lib/analytics/access", () => ({ requireAnalyticsAdmin: vi.fn() }));
 vi.mock("@/lib/analytics/queries", () => ({ readAnalytics: vi.fn() }));
 import { requireAnalyticsAdmin } from "@/lib/analytics/access";
 import { readAnalytics } from "@/lib/analytics/queries";
-import AdminLayout from "../layout";
+import AdminLayout from "./layout";
 import AnalyticsPage, {
   dynamic,
   revalidate,

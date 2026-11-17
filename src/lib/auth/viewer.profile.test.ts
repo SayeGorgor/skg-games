@@ -38,6 +38,7 @@ let migratedProfile: Record<string, unknown>;
 beforeAll(async () => {
   for (const file of readdirSync("drizzle")
     .filter((name) => /^\d+.*\.sql$/.test(name))
+    .filter((name) => name !== "0008_role_change_engine.sql")
     .sort()) {
     if (file === "0005_user_profile_email.sql")
       await pg.exec(

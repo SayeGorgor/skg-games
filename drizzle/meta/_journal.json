@@ -57,6 +57,13 @@
       "when": 1794524753941,
       "tag": "0007_role_assignment_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794524753942,
+      "tag": "0008_role_change_engine",
+      "breakpoints": true
     }
   ]
 }

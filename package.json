@@ -8,8 +8,9 @@
     "start": "next start",
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
+    "db:migrate": "tsx scripts/migrate-db.ts",
+    "db:push": "node -e \"console.error('db:push is disabled; use reviewed migrations with explicit operator credentials.');process.exit(1)\"",
+    "db:verify-runtime": "tsx scripts/verify-db-runtime-privileges.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
     "test": "vitest run",
@@ -23,7 +24,8 @@
     "generate:alibi-dailies": "tsx scripts/generate-alibi-dailies.ts",
     "validate:alibi-cases": "tsx scripts/validate-alibi-cases.ts",
     "test:stack-account": "node --import tsx scripts/verify-stack-account.ts",
-    "admin:bootstrap-owner": "tsx scripts/bootstrap-owner.ts"
+    "admin:bootstrap-owner": "tsx scripts/bootstrap-owner.ts",
+    "db:verify-role-writer": "tsx scripts/verify-role-writer.ts"
   },
   "dependencies": {
     "@neondatabase/auth": "^0.7.0-beta",

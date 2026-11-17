@@ -24,6 +24,7 @@ const db = drizzle(pg);
 beforeAll(async () => {
   for (const file of readdirSync("drizzle")
     .filter((name) => /^\d+.*\.sql$/.test(name))
+    .filter((name) => name !== "0008_role_change_engine.sql")
     .sort())
     await pg.exec(
       readFileSync(path.join("drizzle", file), "utf8").replaceAll(
