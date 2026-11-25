@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",
+    "db:migrate-phase3-production": "tsx scripts/migrate-phase3-production.ts",
     "db:migrate": "tsx scripts/migrate-db.ts",
     "db:push": "node -e \"console.error('db:push is disabled; use reviewed migrations with explicit operator credentials.');process.exit(1)\"",
     "db:verify-runtime": "tsx scripts/verify-db-runtime-privileges.ts",

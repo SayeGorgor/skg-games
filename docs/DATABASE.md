@@ -365,7 +365,9 @@ for staged execution, the environment inventory, and manual read-only catalog
 checks. The [readiness matrix](../developer-docs/phase-3-production-readiness.md)
 records release gates and evidence. The checked-in migration CLI and privilege
 probes remain isolated-development tools. Production needs a separately
-approved migration procedure and a reviewed 0009 lock window.
+approved migration procedure and a reviewed 0009 lock window. See the
+[one-time production runner](#one-time-production-00080009-migration-runner)
+for the exact 0007-to-0009 path.
 
 This checklist requires separate operator approval. Complete the relevant
 isolated integration steps before a production release. Phase 3B role
@@ -422,3 +424,97 @@ writer can assert a privileged actor ID to PostgreSQL. A stolen reader can
 enumerate the function projection. The database owner retains authority over
 the history. Investigate and rotate affected credentials through the approved
 incident process.
+
+### One-time production 0008/0009 migration runner
+
+This runner is separate from the isolated development migrator. Use it only
+for the approved production database reported to be on 0007. The reported
+operator, provisioned roles, ownership, audit RLS and table size must be
+rechecked. Both optional application features stay disabled during the window.
+
+**Operator approval and independent target review.** Before either mode,
+independently map the direct Neon endpoint to the production project, branch
+and database in the operator console. Verify the role and branch with a
+second reviewer. Approval text and matching hostnames are attestations and
+configuration checks. Use a clean checkout of the reviewed full commit,
+from the repository root, with its locked dependencies. The runner checks
+the commit and clean worktree and compares migration content to Git. Local
+Drizzle file hashes must match every historical ledger entry byte-for-byte.
+Check the expected checkout line endings if they differ. Never alter the
+ledger or migration files to make the comparison pass.
+
+**Process environment variable names**
+
+- `NODE_ENV`
+- `SKG_PROD_MIGRATION_DATABASE_URL` (secret, only in the private operator shell)
+- `SKG_PROD_MIGRATION_EXPECTED_HOST`
+- `SKG_PROD_MIGRATION_EXPECTED_DATABASE`
+- `SKG_PROD_MIGRATION_EXPECTED_ROLE`
+- `SKG_PROD_MIGRATION_REVIEWED_REVISION`
+- `SKG_PROD_MIGRATION_APPROVED_TARGET`
+- `SKG_PROD_MIGRATION_APPROVED_APPLY` (apply mode only)
+
+The production marker is required. The runner is deliberately scoped to
+`neondb`, `neondb_owner`, a direct TLS Neon endpoint, and the stated 0007
+ledger anchor. The two approvals are explicit `yes` attestations. Leave the
+apply variable unset for read-only runs. Supply the secret from an approved
+private source without placing it in shell history, tracked files, other
+deployment settings, or diagnostic output. The runner never loads dotenv or
+uses `DATABASE_URL`.
+
+1. **Read-only preflight** after approving the independently verified target.
+
+   ```powershell
+   Remove-Item Env:SKG_PROD_MIGRATION_APPROVED_APPLY -ErrorAction SilentlyContinue
+   npm.cmd run db:migrate-phase3-production -- --preflight
+   ```
+
+   Expect the exact ledger through 0007 and no objects created by 0008 or 0009.
+   Preflight runs inside a repeatable-read, read-only transaction. It checks
+   identities, table owners, audit RLS, managed Auth prerequisites, effective
+   grants, and the full ledger. Record the two printed hashes and the approved
+   revision privately. A complete 0009 ledger with valid objects is reported
+   as already applied. Any partial ledger or inconsistent objects stop the run.
+
+2. **REQUIRES EXPLICIT OPERATOR APPROVAL.** Confirm recovery readiness, review
+   the charged 0009 write-lock window using a separate read-only estimate and
+   rehearsal, pause competing migrations and operator writes, and record
+   approval for these two hashes. The runner allows 3 seconds per lock
+   acquisition and 30 seconds per statement. The regular audit index build
+   can block audit-table inserts until the outer commit. The ledger is also
+   exclusively locked during apply. If those limits or the maintenance
+   window are unsuitable, stop for a reviewed migration strategy.
+   Set the additional apply attestation through the operator process, then
+   run once from the same reviewed checkout.
+
+   ```powershell
+   npm.cmd run db:migrate-phase3-production -- --apply
+   ```
+
+   Apply repeats preflight while holding the ledger lock and refuses any
+   starting point other than exactly 0007. The installed Neon HTTP migrator
+   executes the migration statements and ledger inserts separately and is
+   unsuitable for this change. The production runner uses one Neon WebSocket
+   client and Drizzle ORM 0.45.4's PostgreSQL migration engine. The runner
+   starts the outer transaction before checks and locking. The adapter uses
+   a savepoint on that same connection, with Drizzle executing the original
+   files and registering the ledger rows. The runner checks the complete
+   ledger and resulting objects and effective ACLs before committing both
+   migrations and both ledger inserts together.
+
+3. **Read-only postflight.** Repeat the preflight command in a fresh session
+   with apply approval unset. Expect the ledger through 0009, the same two
+   hashes, exact function signatures and owners, restricted execution, the
+   revision column and constraint, valid index, no direct audit access or
+   role writes from service identities, and preserved audit RLS. Use catalog
+   evidence only. Do not call the production writer to test it.
+
+**Failure and recovery.** Stop on any error, connection loss, or ambiguous
+commit. Keep optional features disabled and run only fresh read-only preflight.
+If the ledger is exactly 0007 and prerequisite objects are still absent,
+review the failure and obtain a new explicit approval before any later
+attempt. If the ledger is exactly 0009 and expected object and ACL checks
+pass, record the completed migration. Any mixed state, hash drift, or failed
+object check requires a separately reviewed forward recovery. No blind replay,
+manual ledger edits, provisioning changes, or automatic retry. A rolled-back
+attempt can consume sequence values without adding committed ledger rows.
