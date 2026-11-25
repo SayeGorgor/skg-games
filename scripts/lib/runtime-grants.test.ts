@@ -17,7 +17,12 @@ const pg = new PGlite();
 beforeAll(async () => {
   for (const file of readdirSync("drizzle")
     .filter(
-      (f) => /^\d+.*\.sql$/.test(f) && f !== "0008_role_change_engine.sql",
+      (f) =>
+        /^\d+.*\.sql$/.test(f) &&
+        ![
+          "0008_role_change_engine.sql",
+          "0009_admin_audit_reader.sql",
+        ].includes(f),
     )
     .sort())
     await pg.exec(

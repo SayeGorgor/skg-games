@@ -39,13 +39,26 @@ function writerUrl(env: NodeJS.ProcessEnv): string | null {
       !["postgres:", "postgresql:"].includes(a.protocol) ||
       decodeURIComponent(w.username) !== "skg_role_writer" ||
       !w.password ||
+      decodeURIComponent(a.username) !== "skg_app" ||
+      !a.password ||
       w.hostname !== env.SKG_RBAC_WRITER_EXPECTED_HOST ||
       a.hostname !== env.SKG_RBAC_RUNTIME_EXPECTED_HOST ||
       decodeURIComponent(w.pathname.slice(1)) !==
         env.SKG_RBAC_EXPECTED_DATABASE ||
       decodeURIComponent(a.pathname.slice(1)) !==
         env.SKG_RBAC_EXPECTED_DATABASE ||
-      w.searchParams.get("sslmode") !== "require" ||
+      ![w, a].every(
+        (endpoint) =>
+          (endpoint.port === "" || endpoint.port === "5432") &&
+          ["require", "verify-full"].includes(
+            endpoint.searchParams.get("sslmode") ?? "",
+          ) &&
+          new Set(endpoint.searchParams.keys()).size ===
+            [...endpoint.searchParams.keys()].length &&
+          [...endpoint.searchParams.keys()].every(
+            (key) => key === "sslmode" || key === "channel_binding",
+          ),
+      ) ||
       w.hash ||
       a.hash
     )
@@ -54,6 +67,10 @@ function writerUrl(env: NodeJS.ProcessEnv): string | null {
   } catch {
     return null;
   }
+}
+
+export function isRoleWriterConfigured(): boolean {
+  return writerUrl(process.env) !== null;
 }
 
 export async function writeApplicationRole(

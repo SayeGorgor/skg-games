@@ -25,6 +25,9 @@
     "validate:alibi-cases": "tsx scripts/validate-alibi-cases.ts",
     "test:stack-account": "node --import tsx scripts/verify-stack-account.ts",
     "admin:bootstrap-owner": "tsx scripts/bootstrap-owner.ts",
+    "db:test-role-engine": "tsx scripts/test-role-engine-postgres.ts",
+    "db:verify-audit-reader": "tsx scripts/verify-audit-reader.ts",
+    "db:test-audit-reader": "tsx scripts/verify-audit-reader.ts --integration",
     "db:verify-role-writer": "tsx scripts/verify-role-writer.ts"
   },
   "dependencies": {

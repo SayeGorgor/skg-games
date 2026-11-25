@@ -14,8 +14,8 @@ export type RoleDecision =
       reason: "invalid" | "forbidden" | "self" | "owner" | "no_op";
     };
 
-/** Eligibility only. A future enabled writer must run this policy against locked,
- * authoritative actor/target roles within the atomic database operation too. */
+/** Shared presentation and server preflight policy. PostgreSQL rechecks
+ * authoritative roles within the atomic database operation. */
 export function evaluateRoleTransition(input: RoleTransition): RoleDecision {
   const { actorId, actorRole, targetId, requestedRole } = input;
   const targetRole = input.targetRole === null ? "player" : input.targetRole;

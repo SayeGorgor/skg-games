@@ -29,7 +29,12 @@ const id = (n: number) =>
 beforeAll(async () => {
   for (const name of readdirSync("drizzle")
     .filter(
-      (n) => /^[0-9]+.*[.]sql$/.test(n) && n !== "0008_role_change_engine.sql",
+      (n) =>
+        /^[0-9]+.*[.]sql$/.test(n) &&
+        ![
+          "0008_role_change_engine.sql",
+          "0009_admin_audit_reader.sql",
+        ].includes(n),
     )
     .sort())
     await pg.exec(
@@ -38,6 +43,9 @@ beforeAll(async () => {
         "",
       ),
     );
+  await pg.exec(
+    "ALTER TABLE public.user_roles ADD COLUMN role_revision bigint NOT NULL DEFAULT 0",
+  );
 }, 30000);
 beforeEach(async () => {
   vi.restoreAllMocks();
@@ -362,3 +370,36 @@ it("does not label an RLS-filtered Auth view as a complete account directory", a
     await pg.exec("RESET ROLE");
   }
 });
+
+it.each(["auth", "profiles"])(
+  "reads explicit and implicit role snapshots from %s without bigint precision loss",
+  async (source) => {
+    if (source === "auth") {
+      await authSchema();
+      await account(1);
+      await account(2);
+    } else {
+      await profile(1);
+      await profile(2);
+    }
+    await pg.query(
+      "INSERT INTO public.user_roles(user_id,role,role_revision) VALUES ($1,'player',9007199254740993)",
+      [id(1)],
+    );
+    const { entries } = await readUserDirectory({ role: "player" }, true);
+    expect(
+      entries.find((entry) => entry.userId === id(1))?.roleSnapshot,
+    ).toEqual({
+      effectiveRole: "player",
+      storedRole: "player",
+      roleRevision: "9007199254740993",
+    });
+    expect(
+      entries.find((entry) => entry.userId === id(2))?.roleSnapshot,
+    ).toEqual({
+      effectiveRole: "player",
+      storedRole: null,
+      roleRevision: null,
+    });
+  },
+);

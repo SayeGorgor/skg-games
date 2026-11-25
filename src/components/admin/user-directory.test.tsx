@@ -2,6 +2,9 @@ import { expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 vi.mock("@/app/admin/users/actions", () => ({ searchUsers: vi.fn() }));
+vi.mock("@/app/admin/users/role-actions", () => ({
+  requestRoleChange: vi.fn(),
+}));
 vi.mock("./users.module.css", () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));

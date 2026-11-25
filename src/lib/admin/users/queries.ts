@@ -158,6 +158,7 @@ export class DirectoryUnavailableError extends Error {
 }
 export async function readUserDirectory(
   input: DirectoryInput = {},
+  includeRoleSnapshots = false,
 ): Promise<DirectoryResult> {
   await requirePermission("users:read");
   const filters = parseDirectoryFilters(input);
@@ -184,28 +185,50 @@ export async function readUserDirectory(
       : sql`created_at DESC NULLS LAST,user_id DESC`;
     const { rows } = await db.execute<{
       total: string;
-      entries: DirectoryEntry[];
+      entries: (DirectoryEntry & {
+        storedRole?: unknown;
+        roleRevision?: unknown;
+      })[];
       has_previous: boolean;
       has_next: boolean;
     }>(sql`
       WITH base AS (SELECT ${source.id} AS user_id,${source.name} AS display_name,${source.email} AS email,${source.date} AS created_at,
-        CASE WHEN r.role::text IN ('owner','admin','analyst','player') THEN r.role::text ELSE 'player' END AS role FROM ${source.from}),
+        CASE WHEN r.role::text IN ('owner','admin','analyst','player') THEN r.role::text ELSE 'player' END AS role
+        ${includeRoleSnapshots ? sql`,r.role::text AS stored_role,r.role_revision::text AS role_revision` : sql.empty()} FROM ${source.from}),
       filtered AS (SELECT * FROM base WHERE ${search} AND ${role}),
       selected AS (SELECT * FROM filtered WHERE ${pagePredicate(cursor, before)} ORDER BY ${order} LIMIT ${filters.pageSize}),
       first_row AS (SELECT * FROM selected ORDER BY created_at DESC NULLS LAST,user_id DESC LIMIT 1),
       last_row AS (SELECT * FROM selected ORDER BY created_at ASC NULLS FIRST,user_id ASC LIMIT 1)
       SELECT (SELECT count(*)::text FROM filtered) AS total,
         coalesce((SELECT jsonb_agg(jsonb_build_object('userId',user_id,'displayName',display_name,'email',email,'role',role,
-          'createdAt',to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')) ORDER BY created_at DESC NULLS LAST,user_id DESC) FROM selected),'[]'::jsonb) AS entries,
+          'createdAt',to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+          ${includeRoleSnapshots ? sql`,'storedRole',stored_role,'roleRevision',role_revision` : sql.empty()}) ORDER BY created_at DESC NULLS LAST,user_id DESC) FROM selected),'[]'::jsonb) AS entries,
         EXISTS (SELECT 1 FROM filtered f,first_row b WHERE f.created_at>b.created_at OR (f.created_at=b.created_at AND f.user_id>b.user_id) OR (b.created_at IS NULL AND (f.created_at IS NOT NULL OR f.user_id>b.user_id))) AS has_previous,
         EXISTS (SELECT 1 FROM filtered f,last_row b WHERE f.created_at<b.created_at OR (f.created_at=b.created_at AND f.user_id<b.user_id) OR (f.created_at IS NULL AND (b.created_at IS NOT NULL OR f.user_id<b.user_id))) AS has_next`);
     const row = rows[0];
-    const entries = row.entries.map((e) => ({
+    const entries = row.entries.map((e): DirectoryEntry => ({
       userId: e.userId,
       displayName: e.displayName?.trim() || null,
       email: e.email?.trim() || null,
       role: isAppRole(e.role) ? e.role : ("player" as const),
       createdAt: e.createdAt,
+      ...(includeRoleSnapshots && {
+        roleSnapshot:
+          e.storedRole === null &&
+          e.roleRevision === null &&
+          e.role === "player"
+            ? { effectiveRole: "player", storedRole: null, roleRevision: null }
+            : isAppRole(e.storedRole) &&
+                e.storedRole === e.role &&
+                typeof e.roleRevision === "string" &&
+                /^(0|[1-9][0-9]{0,18})$/.test(e.roleRevision)
+              ? {
+                  effectiveRole: e.storedRole,
+                  storedRole: e.storedRole,
+                  roleRevision: e.roleRevision,
+                }
+              : undefined,
+      }),
     }));
     return {
       entries,

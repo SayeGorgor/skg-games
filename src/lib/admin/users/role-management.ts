@@ -10,9 +10,11 @@ export type RoleChangeResult = {
   status: WriterStatus;
 };
 
-export async function getRoleManagementActor(): Promise<RoleManagementActor | null> {
+export async function getRoleManagementActor(
+  fresh = false,
+): Promise<RoleManagementActor | null> {
   try {
-    const viewer = await getViewer();
+    const viewer = await getViewer(fresh);
     if (!viewer.authenticated || !viewer.userId) return null;
     const role = await getRoleForUser(viewer.userId);
     if (
@@ -30,13 +32,15 @@ export async function getRoleManagementActor(): Promise<RoleManagementActor | nu
 export async function changeUserRole(
   input: unknown,
 ): Promise<RoleChangeResult> {
-  const actor = await getRoleManagementActor();
+  const actor = await getRoleManagementActor(true);
   if (!actor) return { status: "forbidden" };
   if (!input || typeof input !== "object" || Array.isArray(input))
     return { status: "forbidden" };
   const data = input as Record<string, unknown>;
   if (
-    ![3, 4].includes(Object.keys(data).length) ||
+    !["targetId", "requestedRole", "expectedRole"].every((key) =>
+      Object.hasOwn(data, key),
+    ) ||
     Object.keys(data).some(
       (key) =>
         ![
@@ -63,7 +67,12 @@ export async function changeUserRole(
     targetRole: data.expectedRole,
     requestedRole: data.requestedRole,
   });
-  if (!decision.allowed) return { status: "forbidden" };
+  // The writer can classify a no-op only after checking the stored revision.
+  if (
+    !decision.allowed &&
+    (decision.reason !== "no_op" || !Object.hasOwn(data, "expectedRevision"))
+  )
+    return { status: "forbidden" };
   // Legacy requests cannot establish an ABA-safe expected state.
   if (!Object.hasOwn(data, "expectedRevision"))
     return { status: "temporarily_unavailable" };

@@ -1,3 +1,4 @@
+import type { RoleManagementActor } from "./role-management";
 import type { AppRole } from "@/lib/auth/permissions";
 export type DirectoryInput = {
   search?: unknown;
@@ -11,12 +12,16 @@ export type DirectoryFilters = {
   role: AppRole | "all";
   pageSize: 25 | 50;
 };
+export type RoleSnapshot =
+  | { effectiveRole: "player"; storedRole: null; roleRevision: null }
+  | { effectiveRole: AppRole; storedRole: AppRole; roleRevision: string };
 export type DirectoryEntry = {
   userId: string;
   displayName: string | null;
   email: string | null;
   role: AppRole;
   createdAt: string | null;
+  roleSnapshot?: RoleSnapshot;
 };
 export type DirectorySource = {
   kind: "auth" | "profiles";
@@ -36,4 +41,7 @@ export type DirectoryState = {
   status: "ready" | "invalid" | "error";
   result: DirectoryResult | null;
   message?: string;
+  roleManagementEnabled?: boolean;
+  page?: string;
+  roleManagementActor?: RoleManagementActor | null;
 };

@@ -64,6 +64,13 @@
       "when": 1794524753942,
       "tag": "0008_role_change_engine",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794524753943,
+      "tag": "0009_admin_audit_reader",
+      "breakpoints": true
     }
   ]
 }

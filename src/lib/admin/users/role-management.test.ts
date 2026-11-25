@@ -1,9 +1,8 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/viewer", () => ({ getViewer: vi.fn() }));
 vi.mock("@/lib/auth/authorization", () => ({
   getRoleForUser: vi.fn(),
-  requirePermission: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({
   getDb: vi.fn(() => {
@@ -11,10 +10,11 @@ vi.mock("@/lib/db", () => ({
   }),
 }));
 import { getViewer } from "@/lib/auth/viewer";
-import { getRoleForUser, requirePermission } from "@/lib/auth/authorization";
+import { getRoleForUser } from "@/lib/auth/authorization";
 import { getDb } from "@/lib/db";
 import { changeUserRole } from "./role-management";
 import { requestRoleChange } from "@/app/admin/users/role-actions";
+afterEach(() => vi.unstubAllEnvs());
 const actor = "00000000-0000-4000-8000-000000000001";
 const target = "00000000-0000-4000-8000-000000000002";
 const input = {
@@ -32,7 +32,7 @@ beforeEach(() => {
     premium: false,
   });
   vi.mocked(getRoleForUser).mockResolvedValue("owner");
-  vi.mocked(requirePermission).mockResolvedValue();
+  vi.stubEnv("SKG_RBAC_ROLE_MANAGEMENT_ENABLED", "");
 });
 it("independently rechecks trusted identity/role and stays closed for every valid transition", async () => {
   for (const actorRole of ["owner", "admin"] as const) {
@@ -86,11 +86,12 @@ it("rejects forged actor fields, malformed IDs, Owner, self, no-op and protected
     });
   expect(getDb).not.toHaveBeenCalled();
 });
-it("protects the action before the independent boundary and does not leak details", async () => {
-  vi.mocked(requirePermission).mockRejectedValue(new Error("NOT_FOUND"));
-  await expect(requestRoleChange(input)).rejects.toThrow("NOT_FOUND");
+it("protects the disabled action before session or database lookup", async () => {
+  await expect(requestRoleChange(input)).resolves.toEqual({
+    status: "temporarily_unavailable",
+  });
   expect(getViewer).not.toHaveBeenCalled();
-  expect(requirePermission).toHaveBeenCalledWith("users:manage");
+  expect(getRoleForUser).not.toHaveBeenCalled();
 });
 it("repeated/concurrent submissions never write roles or audits or report success", async () => {
   const results = await Promise.all(

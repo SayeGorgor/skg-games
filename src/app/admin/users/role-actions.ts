@@ -1,5 +1,5 @@
-"use server";
-import { requirePermission } from "@/lib/auth/authorization";
+﻿"use server";
+import { isRoleManagementEnabled } from "@/lib/admin/users/role-management-feature";
 import {
   changeUserRole,
   type RoleChangeResult,
@@ -9,6 +9,6 @@ import {
 export async function requestRoleChange(
   input: unknown,
 ): Promise<RoleChangeResult> {
-  await requirePermission("users:manage");
+  if (!isRoleManagementEnabled()) return { status: "temporarily_unavailable" };
   return changeUserRole(input);
 }

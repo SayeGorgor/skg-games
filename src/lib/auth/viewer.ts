@@ -47,7 +47,7 @@ export async function getPremiumEntitlement(userId: string) {
     .limit(1);
   return hasPremiumSubscription(subscription);
 }
-export const getViewer = cache(async (): Promise<Viewer> => {
+export const getViewer = cache(async (fresh = false): Promise<Viewer> => {
   const empty: Viewer = {
     userId: null,
     email: null,
@@ -56,14 +56,16 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     premium: false,
   };
   if (!auth) return empty;
-  const response = await auth.getSession().catch(() => {
-    Sentry.logger.error("Session lookup failed", {
-      operation: "get_session",
-      feature: "auth",
-      outcome: "unexpected_failure",
+  const response = await auth
+    .getSession(fresh ? { query: { disableCookieCache: "true" } } : undefined)
+    .catch(() => {
+      Sentry.logger.error("Session lookup failed", {
+        operation: "get_session",
+        feature: "auth",
+        outcome: "unexpected_failure",
+      });
+      return null;
     });
-    return null;
-  });
   if (response?.error) {
     Sentry.logger.warn("Session lookup returned an error", {
       operation: "get_session",

@@ -1,5 +1,11 @@
 import { beforeEach, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/admin/users/role-management", () => ({
+  getRoleManagementActor: vi.fn(),
+}));
+vi.mock("@/lib/admin/users/role-management-feature", () => ({
+  isRoleManagementEnabled: vi.fn(),
+}));
 vi.mock("@/lib/auth/authorization", () => ({ requirePermission: vi.fn() }));
 vi.mock("@/lib/admin/users/queries", () => ({ readUserDirectory: vi.fn() }));
 vi.mock("next/navigation", () => ({
@@ -51,4 +57,31 @@ it("safely classifies validation and database errors without reflecting records 
   const result = await searchUsers(new FormData());
   expect(result).toMatchObject({ status: "error", result: null });
   expect(JSON.stringify(result)).not.toMatch(/email@example|raw SQL|password/);
+});
+
+it("reconciles an empty cursor page within the same active filters", async () => {
+  const filters = { search: "Synthetic", role: "player", pageSize: "25" };
+  const form = new FormData();
+  for (const [key, value] of Object.entries(filters)) form.set(key, value);
+  form.set("page", "next:cursor");
+  const emptyPage = {
+    entries: [],
+    total: 1,
+    filters: { ...filters, role: "player" as const, pageSize: 25 as const },
+    source: {
+      kind: "profiles" as const,
+      dateLabel: "",
+      coverage: "",
+      emailNote: "",
+    },
+    nextCursor: null,
+    previousCursor: null,
+  };
+  vi.mocked(readUserDirectory).mockResolvedValue(emptyPage);
+  expect(await searchUsers(form)).toMatchObject({
+    status: "ready",
+    page: "first",
+    result: { filters: emptyPage.filters },
+  });
+  expect(readUserDirectory).toHaveBeenNthCalledWith(2, filters);
 });

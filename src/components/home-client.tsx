@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AdSlot } from "./ad-slot";
 import { SiteHeader } from "./site-header";
 import { StackMiniBoard } from "./stack-mini-board";
 import { getLocalProgress } from "@/lib/client-progress";

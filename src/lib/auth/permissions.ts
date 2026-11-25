@@ -6,6 +6,7 @@ export const appPermissions = [
   "roles:assign_lower",
   "roles:assign_admin",
   "system:manage",
+  "audit:read",
 ] as const;
 export type AppPermission = (typeof appPermissions)[number];
 const rolePermissions: Readonly<Record<AppRole, readonly AppPermission[]>> = {

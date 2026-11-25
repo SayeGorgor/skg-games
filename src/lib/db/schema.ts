@@ -331,6 +331,10 @@ export const roleAssignmentAudit = pgTable(
     AND ${t.action} = 'role_assignment'
   )`,
     ),
+    index("role_audit_history_idx").on(
+      t.createdAt.desc().nullsLast(),
+      t.id.desc().nullsLast(),
+    ),
     uniqueIndex("role_audit_initial_owner_uq")
       .on(t.action)
       .where(sql`${t.action} = 'owner_bootstrap'`),

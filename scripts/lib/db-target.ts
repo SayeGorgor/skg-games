@@ -1,9 +1,12 @@
+import { matchesDatabaseUrl } from "../../src/lib/db/connection-target";
+
 // Never loads dotenv, uses DATABASE_URL, or includes secrets in errors.
 export function approvedDbTarget(
   env: Readonly<Record<string, string | undefined>>,
-  purpose: "MIGRATION" | "VERIFY" | "ROLE_WRITER_VERIFY",
+  purpose:
+    "MIGRATION" | "VERIFY" | "ROLE_WRITER_VERIFY" | "AUDIT_READER_VERIFY",
 ) {
-  if (env.NODE_ENV === "production")
+  if (env.NODE_ENV === "production" || env.VERCEL_ENV === "production")
     throw new Error(
       "Development-only database tooling refuses production mode.",
     );
@@ -12,7 +15,7 @@ export function approvedDbTarget(
       ? "SKG_MIGRATION"
       : purpose === "VERIFY"
         ? "SKG_DB_VERIFY"
-        : "SKG_ROLE_WRITER_VERIFY";
+        : "SKG_" + purpose;
   const url = env[`${prefix}_DATABASE_URL`],
     host = env[`${prefix}_EXPECTED_HOST`],
     database = env[`${prefix}_EXPECTED_DATABASE`],
@@ -27,38 +30,16 @@ export function approvedDbTarget(
     throw new Error(
       "Explicit isolated-development approval, connection and expected target are required.",
     );
-  try {
-    const parsed = new URL(url);
-    if (
-      !["postgres:", "postgresql:"].includes(parsed.protocol) ||
-      parsed.hash ||
-      (parsed.port !== "" && parsed.port !== "5432") ||
-      parsed.hostname !== host ||
-      decodeURIComponent(parsed.pathname.slice(1)) !== database ||
-      decodeURIComponent(parsed.username) !== role ||
-      !parsed.password ||
-      !/^[a-zA-Z0-9_.-]+$/.test(host) ||
-      !/^[a-zA-Z0-9_-]+$/.test(database) ||
-      !/^[a-zA-Z0-9_-]+$/.test(role) ||
-      !["require", "verify-full"].includes(
-        parsed.searchParams.get("sslmode") ?? "",
-      ) ||
-      new Set(parsed.searchParams.keys()).size !==
-        [...parsed.searchParams.keys()].length ||
-      [...parsed.searchParams.keys()].some(
-        (key) => !["sslmode", "channel_binding"].includes(key),
-      )
-    )
-      throw new Error();
-  } catch {
+  if (!matchesDatabaseUrl(url, host, database, role))
     throw new Error(
       "Database target does not match the explicit approved target.",
     );
-  }
   if (purpose === "VERIFY" && role !== "skg_app")
     throw new Error("Verification requires skg_app.");
   if (purpose === "ROLE_WRITER_VERIFY" && role !== "skg_role_writer")
     throw new Error("Verification requires skg_role_writer.");
+  if (purpose === "AUDIT_READER_VERIFY" && role !== "skg_audit_reader")
+    throw new Error("Verification requires skg_audit_reader.");
   if (purpose === "MIGRATION" && role === "skg_app")
     throw new Error("Migration requires a separate operator identity.");
   return { url, host, database, role };

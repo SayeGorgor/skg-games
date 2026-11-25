@@ -1,3 +1,4 @@
+import { auditHistoryEnabled } from "@/lib/admin/audit/feature";
 import { notFound } from "next/navigation";
 import { getCurrentUserRole } from "@/lib/auth/authorization";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -17,7 +18,7 @@ export default async function AdminLayout({
     notFound();
   return (
     <>
-      <AdminNavigation role={role} />
+      <AdminNavigation role={role} auditEnabled={auditHistoryEnabled()} />
       {children}
     </>
   );

@@ -2,7 +2,7 @@
 vi.mock("server-only", () => ({}));
 const query = vi.fn();
 vi.mock("@neondatabase/serverless", () => ({ neon: vi.fn(() => ({ query })) }));
-import { writeApplicationRole } from "./role-writer";
+import { isRoleWriterConfigured, writeApplicationRole } from "./role-writer";
 const input = {
   actorId: "00000000-0000-4000-8000-000000000001",
   targetId: "00000000-0000-4000-8000-000000000002",
@@ -48,4 +48,17 @@ it("uses one parameterized invocation and does not retry an ambiguous failure", 
     null,
     null,
   ]);
+});
+
+it("rejects privileged or non-TLS runtime connections and connection-option overrides", () => {
+  configure();
+  expect(isRoleWriterConfigured()).toBe(true);
+  for (const runtime of [
+    "postgresql://neondb_owner:test@runtime.example/db?sslmode=require",
+    "postgresql://skg_app:test@runtime.example/db?sslmode=disable",
+    "postgresql://skg_app:test@runtime.example/db?sslmode=require&options=-crole",
+  ]) {
+    vi.stubEnv("DATABASE_URL", runtime);
+    expect(isRoleWriterConfigured()).toBe(false);
+  }
 });
